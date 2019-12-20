@@ -1,4 +1,5 @@
 {
+    "storage_account": "oejenkins",
     "managed_image_name": "terraform-win2016dcap",
     "os_type": "Windows",
     "image_publisher": "MicrosoftWindowsServer",
