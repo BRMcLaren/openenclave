@@ -1,0 +1,11 @@
+{
+    "os_type": "Linux",
+    "image_publisher": "Canonical",
+    "image_offer": "UbuntuServer",
+    "image_sku": "18.04-LTS",
+    "vm_size": "Standard_DC2s",
+    "communicator": "ssh",
+    "ansible_group": "linux-agents",
+    "playbook_file": "/ansible/oe-linux-acc-setup.yml",
+    "managed_image_name": "terraform-bionic"
+}
