@@ -33,7 +33,7 @@
     "communicator": "{{ user `communicator` }}",
     "winrm_use_ssl": true,
     "winrm_insecure": true,
-    "winrm_timeout": "5m",
+    "winrm_timeout": "10m",
     "winrm_username": "Administrator",
 
     "location": "{{user `location`}}",
