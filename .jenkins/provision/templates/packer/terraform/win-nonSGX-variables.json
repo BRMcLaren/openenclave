@@ -1,12 +1,12 @@
 {
-    "managed_image_name": "terraform-win2016",
+    "managed_image_name": "terraform-win2016-nonSGX",
     "os_type": "Windows",
     "image_publisher": "MicrosoftWindowsServer",
     "image_offer": "confidential-compute-preview",
     "image_sku": "acc-windows-server-2016-datacenter",
-    "vm_size": "Standard_DC2s",
+    "vm_size": "Standard_D4s_v3",
     "communicator": "winrm",
     "ansible_group": "windows-agents",
-    "playbook_file": "/ansible/oe-windows-acc-setup.yml",
+    "playbook_file": "/ansible/oe-windows-nonSGX-setup.yml",
     "dcap_testing_node": "false"
 }
