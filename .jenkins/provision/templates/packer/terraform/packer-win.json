@@ -33,8 +33,8 @@
     "communicator": "{{ user `communicator` }}",
     "winrm_use_ssl": true,
     "winrm_insecure": true,
-    "winrm_timeout": "10m",
-    "winrm_username": "Administrator",
+    "winrm_timeout": "30m",
+    "winrm_username": "packer",
 
     "location": "{{user `location`}}",
     "vm_size": "{{user `vm_size`}}"
