@@ -16,10 +16,6 @@
   register: result
   until: result is success
 
-- import_role:
-    name: linux/docker
-    tasks_from: stable-install.yml
-
 - name: Jenkins | Create the Jenkins group
   group:
     name: jenkins
@@ -31,8 +27,11 @@
     group: jenkins
     state: present
 
+- import_role:
+    name: linux/docker
+    tasks_from: stable-install.yml
+
 - name: Docker | Add the Jenkins system user to the Docker group
   user:
     name: jenkins
     groups: docker
-    append: yes
