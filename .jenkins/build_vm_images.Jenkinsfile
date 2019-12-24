@@ -36,7 +36,7 @@ def buildVMImage(String os_type, String version, String imageName) {
                 checkout scm
                 dir("${WORKSPACE}/.jenkins/provision/templates/packer/terraform") {
                     oe.azureEnvironment("""
-                                        packer build --force -var-file=${os_type}-${version}-variables.json packer-${os_type}.json
+                                        PACKER_LOG=1 packer build --force -var-file=${os_type}-${version}-variables.json packer-${os_type}.json
                                         """, imageName)
                 }
             }

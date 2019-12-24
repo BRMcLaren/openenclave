@@ -23,9 +23,9 @@ RUN apt-get update && \
     wget https://releases.hashicorp.com/terraform/0.12.18/terraform_0.12.18_linux_amd64.zip && \
     unzip terraform_0.12.18_linux_amd64.zip -d /usr/sbin && \
     rm terraform_0.12.18_linux_amd64.zip && \
-    wget https://releases.hashicorp.com/packer/1.4.2/packer_1.4.2_linux_amd64.zip && \
-    unzip packer_1.4.2_linux_amd64.zip -d /usr/sbin && \
-    rm packer_1.4.2_linux_amd64.zip && \
+    wget https://releases.hashicorp.com/packer/1.5.0/packer_1.5.0_linux_amd64.zip && \
+    unzip packer_1.5.0_linux_amd64.zip -d /usr/sbin && \
+    rm packer_1.5.0_linux_amd64.zip && \
     groupadd --gid ${GID} ${GNAME} && \
     useradd --create-home --uid ${UID} --gid ${GID} --shell /bin/bash ${UNAME} && \
     chown ${UID}:${GID} -R /ansible && \
