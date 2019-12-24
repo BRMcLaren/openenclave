@@ -28,7 +28,11 @@
 - name: Jenkins | Add the Jenkins user
   user:
     name: jenkins
-    groups:
-      - jenkins
-      - docker
+    group: jenkins
     state: present
+
+- name: Docker | Add the Jenkins system user to the Docker group
+  user:
+    name: jenkins
+    groups: docker
+    append: yes
