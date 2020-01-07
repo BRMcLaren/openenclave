@@ -81,6 +81,7 @@ add_subdirectory(initializers)
 add_subdirectory(mixed_c_cpp)
 add_subdirectory(pingpong)
 add_subdirectory(pingpong-shared)
+add_subdirectory(fuzztests)
 endif()
 
 # Windows test Broken Post #632 issue

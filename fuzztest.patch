@@ -1,0 +1,1556 @@
+diff --git a/fuzz_test.sh b/fuzz_test.sh
+new file mode 100755
+index 0000000..2fafaeb
+--- /dev/null
++++ b/fuzz_test.sh
+@@ -0,0 +1,47 @@
++# !!!! run this from root directory of openenclave !!!!
++
++# build OE
++mkdir build
++cd build
++cmake .. -DUSE_LIBSGX=OFF
++sudo make
++sudo make install
++cd ..
++
++# build OE samples
++export CC=gcc
++. build/output/share/openenclave/openenclaverc
++find samples  -name Makefile -execdir make \;
++
++# create fuzz test folders
++sudo mkdir /oesigndump /oesigndump/seeds /oesignsign /oesignsign/seeds /oeedger8r /oeedger8r/seeds /tcbinfo_test /tcbinfo_test/seeds /sgxextensions_test /sgxextensions_test/seeds /qeidentity_test /qeidentity_test/seeds
++
++# copy test collaterals for oeedger8r
++sudo cp build/tools/oeedger8r/oeedger8r /oeedger8r/
++sudo cp `find samples -name *.edl` /oeedger8r/seeds
++
++# copy test collaterals for oesign dump
++sudo cp build/output/bin/oesign /oesigndump/oesigndump
++sudo cp `find samples -name *.signed` /oesigndump/seeds
++
++# copy test collaterals for oesign sign
++sudo cp build/output/bin/oesign /oesignsign/oesignsign
++sudo cp `find samples -name *.signed | cut -f -1 -d.` /oesignsign/seeds
++sudo cp `find samples -name enc.conf` /oesignsign/
++sudo cp `find samples -name private.pem` /oesignsign/
++
++# copy test collaterals for tcbinfo parser
++sudo cp build/tests/fuzztests/tcbinfo_test /tcbinfo_test
++sudo cp build/tests/fuzztests/seeds/tcbinfoparser/* /tcbinfo_test/seeds
++
++# copy test collaterals for sgx extension parser
++sudo cp build/tests/fuzztests/sgxextensions_test /sgxextensions_test
++sudo cp build/tests/fuzztests/seeds/parcesgxextensions/* /sgxextensions_test/seeds
++
++# copy test collaterals for qe identity parser
++sudo cp build/tests/fuzztests/qeidentity_test /qeidentity_test
++sudo cp build/tests/fuzztests/seeds/qeidentity/* /qeidentity_test/seeds
++
++# rename seeds for oesign with same extensions (demanded by fuzzer)
++cd /oesignsign/seeds
++for f in *;do sudo mv $f $f.unsigned;done
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 6d948e4..a9b9053 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -71,6 +71,7 @@ add_subdirectory(initializers)
+ add_subdirectory(mixed_c_cpp)
+ add_subdirectory(pingpong)
+ add_subdirectory(pingpong-shared)
++add_subdirectory(fuzztests)
+ endif()
+ 
+ # Windows test Broken Post #632 issue
+diff --git a/tests/fuzztests/CMakeLists.txt b/tests/fuzztests/CMakeLists.txt
+new file mode 100644
+index 0000000..014a1ce
+--- /dev/null
++++ b/tests/fuzztests/CMakeLists.txt
+@@ -0,0 +1,26 @@
++# Copyright (c) Microsoft Corporation. All rights reserved.
++# Licensed under the MIT License.
++
++add_executable(tcbinfo_test tcbinfoparser.cpp)
++add_executable(sgxextensions_test parcesgxextensions.cpp)
++add_executable(qeidentity_test qeidentityparser.cpp)
++if(USE_LIBSGX)
++    target_compile_definitions(tcbinfo_test PRIVATE OE_USE_LIBSGX )
++	target_compile_definitions(sgxextensions_test PRIVATE OE_USE_LIBSGX )
++ target_compile_definitions(qeidentity_test PRIVATE OE_USE_LIBSGX )
++endif()
++
++add_custom_command( TARGET tcbinfo_test
++    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/seeds/tcbinfoparser ${CMAKE_CURRENT_BINARY_DIR}/seeds/tcbinfoparser )
++add_custom_command( TARGET sgxextensions_test
++    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/seeds/parcesgxextensions ${CMAKE_CURRENT_BINARY_DIR}/seeds/parcesgxextensions )
++add_custom_command( TARGET qeidentity_test
++    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/seeds/qeidentity ${CMAKE_CURRENT_BINARY_DIR}/seeds/qeidentity )
++
++target_link_libraries(tcbinfo_test PRIVATE oehost oe_includes)
++target_link_libraries(sgxextensions_test PRIVATE oehostapp )
++target_link_libraries(qeidentity_test PRIVATE oehost oe_includes)
++
++add_test(NAME tests/tcbinfo_test COMMAND ./tcbinfo_test ${CMAKE_CURRENT_BINARY_DIR}/seeds/tcbinfoparser/tcbInfo.json)
++add_test(NAME tests/sgxextensions_test COMMAND ./sgxextensions_test ${CMAKE_CURRENT_BINARY_DIR}/seeds/parcesgxextensions/generate_report.txt)
++add_test(NAME tests/qeidentity_test COMMAND ./qeidentity_test ${CMAKE_CURRENT_BINARY_DIR}/seeds/qeidentity/qeidentity.json)
+diff --git a/tests/fuzztests/bin/README.md b/tests/fuzztests/bin/README.md
+new file mode 100644
+index 0000000..109b9b5
+--- /dev/null
++++ b/tests/fuzztests/bin/README.md
+@@ -0,0 +1 @@
++All parser bin files will kept under this folder.
+diff --git a/tests/fuzztests/parcesgxextensions.cpp b/tests/fuzztests/parcesgxextensions.cpp
+new file mode 100644
+index 0000000..7a0ad12
+--- /dev/null
++++ b/tests/fuzztests/parcesgxextensions.cpp
+@@ -0,0 +1,63 @@
++#include <assert.h>
++#include <dirent.h>
++#include <openenclave/bits/report.h>
++#include <openenclave/host.h>
++#include <openenclave/internal/cert.h>
++#include <openenclave/internal/raise.h>
++#include <openenclave/internal/report.h>
++#include <openenclave/internal/sgxcertextensions.h>
++#include <openenclave/internal/tests.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <fstream>
++#include <vector>
++
++std::vector<uint8_t> FileToBytes(const char* path)
++{
++    std::ifstream f(path, std::ios::binary);
++    std::vector<uint8_t> bytes = std::vector<uint8_t>(
++        std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
++
++    if (bytes.empty())
++    {
++        printf("File %s not found\n", path);
++        exit(1);
++    }
++    bytes.push_back('\0');
++    return bytes;
++}
++
++int main(int argc, char** argv)
++{
++    oe_result_t result;
++    std::vector<uint8_t> buffer_parse;
++    if (argc != 2)
++    {
++        fprintf(
++            stderr, "Usage: %s << Path to the respective file >> \n", argv[0]);
++        exit(1);
++    }
++    result = OE_FAILURE;
++    size_t buffer_size = 1024;
++    uint8_t* buffer;
++    ParsedExtensionInfo parsed_extension_info = {{0}};
++    oe_cert_t leaf_cert = {0};
++    oe_cert_chain_t pck_cert_chain = {0};
++    uint8_t* pem_pck_certificate;
++    size_t pem_pck_certificate_size;
++    buffer_parse = FileToBytes(argv[1]);
++
++    pem_pck_certificate = &buffer_parse[0];
++    pem_pck_certificate_size = (buffer_parse.size() - 1);
++    oe_cert_chain_read_pem(
++        &pck_cert_chain, pem_pck_certificate, pem_pck_certificate_size);
++    oe_cert_chain_get_leaf_cert(&pck_cert_chain, &leaf_cert);
++    buffer = (uint8_t*)malloc(buffer_size);
++    result = ParseSGXExtensions(
++        &leaf_cert, buffer, &buffer_size, &parsed_extension_info);
++    free(buffer);
++    printf(
++        "\n the result of parse_sgx_extensions is %s \n",
++        oe_result_str(result));
++}
+diff --git a/tests/fuzztests/qeidentityparser.cpp b/tests/fuzztests/qeidentityparser.cpp
+new file mode 100644
+index 0000000..0cefb76
+--- /dev/null
++++ b/tests/fuzztests/qeidentityparser.cpp
+@@ -0,0 +1,55 @@
++// Copyright (c) Microsoft Corporation. All rights reserved.
++// Licensed under the MIT License.
++
++#include <assert.h>
++#include <dirent.h>
++#include <stdlib.h>
++#include <string.h>
++#include <fstream>
++#include <vector>
++
++#include "../../common/sgx/tcbinfo.h"
++
++std::vector<uint8_t> FileToBytes(const char* path)
++{
++    std::ifstream f(path, std::ios::binary);
++    std::vector<uint8_t> bytes = std::vector<uint8_t>(
++        std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
++
++    if (bytes.empty())
++    {
++        printf("File %s not found\n", path);
++        exit(1);
++    }
++
++    bytes.push_back('\0');
++    return bytes;
++}
++
++int main(int argc, char** argv)
++{
++    oe_result_t result;
++    std::vector<uint8_t> qeIndentityInfo;
++
++    if (argc != 2)
++    {
++        fprintf(
++            stderr, "Usage: %s << Path to the respective file >> \n", argv[0]);
++        exit(1);
++    }
++
++    qeIndentityInfo = FileToBytes(argv[1]);
++
++    oe_parsed_qe_identity_info_t parsedinfo;
++
++    result = oe_parse_qe_identity_info_json(
++        (uint8_t*)&qeIndentityInfo[0],
++        (uint32_t)qeIndentityInfo.size(),
++        &parsedinfo);
++
++    printf(
++        "\n oe_parse_qe_identity_info_json "
++        "return = %s\n",
++        oe_result_str(result));
++    return 0;
++}
+diff --git a/tests/fuzztests/remote_verify.cpp b/tests/fuzztests/remote_verify.cpp
+new file mode 100644
+index 0000000..b5f7e79
+--- /dev/null
++++ b/tests/fuzztests/remote_verify.cpp
+@@ -0,0 +1,47 @@
++// Copyright (c) Microsoft Corporation. All rights reserved.
++// Licensed under the MIT License.
++
++#include <assert.h>
++#include <dirent.h>
++#include <openenclave/bits/report.h>
++#include <openenclave/host.h>
++#include <openenclave/internal/report.h>
++#include <openenclave/internal/tests.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <fstream>
++#include <vector>
++
++std::vector<uint8_t> FileToBytes(const char* path)
++{
++    std::ifstream f(path, std::ios::binary);
++    std::vector<uint8_t> bytes = std::vector<uint8_t>(
++        std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
++
++    if (bytes.empty())
++    {
++        printf("File %s not found\n", path);
++        exit(1);
++    }
++    bytes.push_back('\0');
++    return bytes;
++}
++
++int main(int argc, char** argv)
++{
++    oe_result_t result;
++    std::vector<uint8_t> report;
++    if (argc != 2)
++    {
++        fprintf(
++            stderr, "Usage: %s << Path to the respective file >> \n", argv[0]);
++        exit(1);
++    }
++    setenv("AZDCAP_BASE_CERT_URL", "https://americas.test.acccache.azure.net/sgx/certificates", 1);
++    report = FileToBytes(argv[1]);
++    result = oe_verify_remote_report( &report[0], report.size() - 1, NULL);
++    printf("\n the string is %s \n", oe_result_str(result));
++
++    return 0;
++}
+diff --git a/tests/fuzztests/seeds/parcesgxextensions/generate_report.txt b/tests/fuzztests/seeds/parcesgxextensions/generate_report.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..248b0d0a766128fb449a17c3f4a8b0ddaa48b36a
+GIT binary patch
+literal 3515
+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
+H?0^0Srg>UO
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/fuzztests/seeds/qeidentity/qeidentity.json b/tests/fuzztests/seeds/qeidentity/qeidentity.json
+new file mode 100755
+index 0000000..8484d9c
+--- /dev/null
++++ b/tests/fuzztests/seeds/qeidentity/qeidentity.json
+@@ -0,0 +1,16 @@
++{
++   "qeIdentity":
++         {
++           "version":1,
++           "issueDate":"2018-10-18T01:26:20Z",
++           "nextUpdate":"2018-11-17T01:26:20Z",
++           "miscselect":"00000000",
++           "miscselectMask":"FFFFFFFF",
++           "attributes":"11000000000000000000000000000000",
++           "attributesMask":"FBFFFFFFFFFFFFFF0000000000000000",
++           "mrsigner":"8C4F5775D796503E96137F77C68A829A0056AC8DED70140B081B094490C57BFF",
++           "isvprodid":1,
++           "isvsvn":1
++           },
++  "signature":"3ad9d2811548ac36b5d5648a74e352377ea681c2d780b75f579bb5058998c487a13c6fbf27b5bae23e77f7d55657fefef110c30ae9197202462913a963e6802b"
++}
+\ No newline at end of file
+diff --git a/tests/fuzztests/seeds/reportinfoparser/generate_report.txt b/tests/fuzztests/seeds/reportinfoparser/generate_report.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b3b55b814619dfbbf968fba9d1b650a9390e54ae
+GIT binary patch
+literal 4595
+zcmdT{d#oc>9qztZ7+heNU07IN5s8roI(_YJO(32#bLP?Z%yc?4ZKn#RooT0?zT4YQ
+zJE(vL1!Q%V1!ZFbY=Q<|OhiIdOi&{aQAvzzF!A*Vl7NV?U_w+Po@wviy?1x-t}cH$
+zNpE|<^ZNbH@9}-JE)WQ;C!ZI$l0W3xF#FHPHV5wBKZw5lwaml&s4d^U=jJmu-&Nl9
+z$5-xr<*IkPAKH89$vYGN{7swIZ+iEZb^g!)>e;+B>&W+G7f=8GR`2DFpAG!>iJRZ~
+z)aRNT4*yN>ee<nr;0NFQ;*C3BIMt@l?SCP<UHB?>;P$=G5C0rBKjR*rev8dN`tK|I
+zcVG13J=Cez|G$ri&I<%yt=4yBx;H%4OYbSYe%l?_sL6HdyBDf|dTo6<{qzOj`{=o^
+ze`VX-hYsB|IKY1SuUGH<7yE<TuN&WZ&f9V6>IXi4`J+!gnW<cFU2)d>cVb(9m-wmt
+z=7W_-j3?UnZT-f^+YaA<&w-8mZhb)K@&_CDdi!4cQv0%$k=A0*f_;Da&LL;}zSgbi
+zf6aj%$K=4-UvK|G{BdXR?l*q6?ft!%F5I2H|Djh8T=vQ9AK&%R!ef{2IaQ4Ak_)33
+z?#*6*@A)^oPv80J{ek?!J+Jk)pMB=8v)H{)-SqCM*1y;BbxSpKy89fw;}&c4{)6`U
+zUyy%24KZ*0@THHyOD??QmsehU?bE;7+TDMueLw#(D<)2!fiK_n^KF+08_(_dzOd_A
+zArO4=_o(v^>!0_3;scp;?pyfwRS#;rHr#Zh^8C)j(#}Vo<Q{zZ7e9LZhM)ZAzAFNO
+zb?Y~5+;qm~GtZ*Ve&3dJ&OLAIw)3~|xZuK_7hSyTl1neUd{f|=ErGx_{sR#&N>?x_
+zr-_`%01eGh3X3ALHHLvq*#@o%fi3D59Zn?UI3kZgKg3%Rbt>6y7t7VW=`yw<rn@E4
+zb7(~7yQYR5%pe|wbwmNzEvtn%T`IV?PFse^K~|kY#cU^?Qc?0MQPEatG~pd!KwHW~
+z(8Wk^jVwMt6p=JGJ8*2aIl5d(jwqZ{Tx1(;UQq-VENTYX*ia!`;kl`yp$rDi*{KY0
+z8Glp81F89@h6Y-B4Z~QG)leL>$faafoJtx9W3Ed;G2(+OFxO;J12bT@A@QPg0x#H7
+zF-0sZ^(Z64(IpL)F|_9v*lzB~0wt21ntXC<6mz{wBsSq#pw6u_F%y>Rl}@fsTpb$4
+zR2?frmtvHeiy{kBtg^x_SjS90kKKX>G-#Xsdef1!iU^@?Fa5?4x)K9G&Ke>n)-$Ia
+zDl?J8@kE)4WCq1>9LF4HBo^CJQ*X+=n5`$($bvOSF>ln-;Gox9oJy&&s8@`v$A=nR
+zw5uiJ_0hl-idL^fbz>sa_812AOjmG;l{wlW$Gcn?=(ODEM>@q~P>rX!xSgm@axGda
+zP76Bi7Uy$okh9&q1NAPKwkcgK$z>r&n*!dQnI`Kd-yB&&Dr`n`t&$+M%ucCiMDkvy
+zJx_;BTN+o?q*sdCV}egDzSS-lq&oQ?Q<X+Cg4LvJL>3*h?S_m9N}58-pXiw+02tDK
+zU@X>F3J~TRWhojKN7<MjZ`5J~sJV*LHgb62Xh5d?=m<&zf?5JWfEhRhE(>PvYCsV}
+z5Qr{d$u(FC&!~M~6)Q1KK@w0@2AH~Q+X5uH#xspRPaPdZ2+6dWZ^=zfiub*N94zoc
+zPG*~A0oR0fmqf9_2N4Zf1u>)yVV(sFw1>+$<qrTq<iw7Z12f!S1NUp#IetDx+<@?y
+z6a0-JIRI!NckBVsCS5`VE&@izFZlYnPF$u*gD@EiDCh(OHnH|Z3z}=--5E|Df5LE$
+z1@0O+y^K?<O^q!Nti}^3#_M1ePA&Uf_X9Djg4K6HN*Mv212%~dKw!n=Ur&1Fp`<w~
+zq*#H=9Wwxd!jsN5>M8(WkeKDs(KOQ2{+%Avby-R!V9plnKq~WDrz*zFwxC)`T9D;2
+zEMUD{hD?O5S!Oq?b&NzrY#0DE5Ex`8S-I<pRu;jOQ!SgUB2o(z14isjn=7gd{V10Q
+zwN^N6<LjsyMIebijy7fkYcmSd^4o^9`v{}tfy8$Ei@k6-)Eud~s*x3jddXt*iB?O(
+zpvyB1sVf{y`t?U)-d@2F_$Whgl2BlvT8SiS(n2B5bzR;sR7FX%kV}!)+Nv;+r7F>s
+zOFpw+QE`xtp*ZW)&~-C<gd=o=Y$Y<Oo9&gXVG}|jo37}|JaSWc-2+w5r6)2=*uy~+
+z%qn5b*2@I*u(uk+0-A^(sLy%|@dfkEC32gat|;`-)>kyDwcMb5Ki-QQl<&t9wJf;-
+zOBiAvPUklbY_xpqq-F&`ivVVl{h)+<5mC0OMXMFAG()38DIU~#rA=6+k?<B0wPCQ9
+zW|XKE9I;-plPB~PDb-n~QJadRlslH9t^|9@1|>jM#VMQ`K-sY?L)Wg@$I*z`)^WJi
+zw<NLS*$Zl3A0!ptYj$AYbt&B^{~TR|Xy~dM6uPKjE3pz>K_f&}%sF{R$wj=1Qm8dJ
+zWu7R0M7Y$r63wxS8uw|$6?`hr(K3Vv;z-6)Yo}~%&Mz*4Ay@H*5QNU0=!G1fQ3=BW
+zp7co}L~feY_39i4v<Wa$7?BAjonRuS1qE+0FNcP*0t=~%Y6U})QFW50V!<+?9g~9@
+zvj-X=YSr<8i<@jbvbdY;<1r9>PNHb>?P;V^t+t#@Djn>3Ju?TcJ4yM@3;QJX>&)s`
+zJyO5=$>MZOZ*r+JdsG?`EwwC-=8Dk2a^<8dki_k%3_KkbxKw_tWMB-l`V?!(l~_{4
+zd0z!$ZxzOM-6NJ$zM4H9(~nqA`3m-QOg|!EshNW1nl5q;!KV?Tw+RI;Yi~m2q;(U{
+zVRm<ri&@bq$xf(|Eesj2jM9w-Dl9i-HIw7&1>UK2U_MpLcbZ0Q6cwE&YZw_CPvls;
+zKb#s)3zl12-k5ON$S?)daj%t@AvN+CIATF<rjJyNcor0Fs5DB7S19yox>1wa#Z+D$
+zhe1VFO@6?_nbH+<38Z>3MPXF6b7jcZn_Slta<1uh$C-#P^>V#ZyX6px+%l(e+U(>#
+z@&?c}eVIq_5~<@d5&IN*jTjk`<YI=NcTqoq^mcM=k>*eI;k3d6Yp&j6h_jXBvXolc
+zPS|-j$<8I6!ukzxi5M&*X8bx9F?lT^GH@mW{Is5_iKRCkcA0X;o)Sv8<Zuzi>O#VF
+z<8mv6=&3hMWVLRpn#`K5#bBjg%jh=cbMA0R_iGDW3%3ETE(YyNFT*AmT9z>lxqZiJ
+SyVAl`$mItSa5BoJ0{;P4z81y+
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfo.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfo.json
+new file mode 100755
+index 0000000..cd859d1
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfo.json
+@@ -0,0 +1,2 @@
++{"tcbInfo":{"version":1,"issueDate":"2018-07-23T14:35:49Z","nextUpdate":"2018-07-30T14:35:49Z","fmspc":"00906EA10000","tcbLevels":[{"tcb":{"sgxtcbcomp01svn":4,"sgxtcbcomp02svn":4,"sgxtcbcomp03svn":2,"sgxtcbcomp04svn":4,"sgxtcbcomp05svn":1,"sgxtcbcomp06svn":128,"sgxtcbcomp07svn":0,"sgxtcbcomp08svn":0,"sgxtcbcomp09svn":0,"sgxtcbcomp10svn":0,"sgxtcbcomp11svn":0,"sgxtcbcomp12svn":0,"sgxtcbcomp13svn":0,"sgxtcbcomp14svn":0,"sgxtcbcomp15svn":0,"sgxtcbcomp16svn":0,"pcesvn":5},"status":"UpToDate"},{"tcb":{"sgxtcbcomp01svn":2,"sgxtcbcomp02svn":2,"sgxtcbcomp03svn":2,"sgxtcbcomp04svn":4,"sgxtcbcomp05svn":1,"sgxtcbcomp06svn":128,"sgxtcbcomp07svn":0,"sgxtcbcomp08svn":0,"sgxtcbcomp09svn":0,"sgxtcbcomp10svn":0,"sgxtcbcomp11svn":0,"sgxtcbcomp12svn":0,"sgxtcbcomp13svn":0,"sgxtcbcomp14svn":0,"sgxtcbcomp15svn":0,"sgxtcbcomp16svn":0,"pcesvn":4},"status":"OutOfDate"}]},"signature":"43cc4895a9b1035ef4c5aa0290913a31c1825d192ecbe0ef4854c603f2dede023665cd622f25825bbae1f8f8dc6e1286cdee499c8a40fc76d689dd2a3329a1c1"}
++
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeCompSvn.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeCompSvn.json
+new file mode 100755
+index 0000000..e9f3dc1
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeCompSvn.json
+@@ -0,0 +1,76 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 257,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 3
++        },
++        "status": "Revoked"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeFloat.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeFloat.json
+new file mode 100755
+index 0000000..0eff02a
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeFloat.json
+@@ -0,0 +1,76 @@
++{
++  "tcbInfo": {
++    "version": 1.234,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 3
++        },
++        "status": "Revoked"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeIntegerOverflow.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeIntegerOverflow.json
+new file mode 100755
+index 0000000..08c63df
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeIntegerOverflow.json
+@@ -0,0 +1,76 @@
++{
++  "tcbInfo": {
++    "version": 10000000000000000000000000000000000,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 3
++        },
++        "status": "Revoked"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeIntegerWithSign.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeIntegerWithSign.json
+new file mode 100755
+index 0000000..189b189
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeIntegerWithSign.json
+@@ -0,0 +1,76 @@
++{
++  "tcbInfo": {
++    "version": -1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 3
++        },
++        "status": "Revoked"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePceSvn.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePceSvn.json
+new file mode 100755
+index 0000000..2bce5f0
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePceSvn.json
+@@ -0,0 +1,76 @@
++{
++  "tcbInfo": {
++    "version": 10000000000000000000000000000000000,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 65537
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 3
++        },
++        "status": "Revoked"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel0.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel0.json
+new file mode 100755
+index 0000000..e8cabda
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel0.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "SIGNATURE": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel1.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel1.json
+new file mode 100755
+index 0000000..6daaad5
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel1.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "VERSION": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel2.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel2.json
+new file mode 100755
+index 0000000..5ebdecd
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel2.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "TCB": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel3.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel3.json
+new file mode 100755
+index 0000000..44c4651
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyMissingLevel3.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "PCESVN": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel0.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel0.json
+new file mode 100755
+index 0000000..e0e5436
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel0.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "signature": 123456
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel1.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel1.json
+new file mode 100755
+index 0000000..77cec40
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel1.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": 90610000,
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel2.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel2.json
+new file mode 100755
+index 0000000..7c12645
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel2.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 5
++        },
++        "status": 1
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel3.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel3.json
+new file mode 100755
+index 0000000..c519180
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativePropertyWrongTypeLevel3.json
+@@ -0,0 +1,54 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": "128",
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 0,
++          "sgxtcbcomp08svn": 0,
++          "sgxtcbcomp09svn": 0,
++          "sgxtcbcomp10svn": 0,
++          "sgxtcbcomp11svn": 0,
++          "sgxtcbcomp12svn": 0,
++          "sgxtcbcomp13svn": 0,
++          "sgxtcbcomp14svn": 0,
++          "sgxtcbcomp15svn": 0,
++          "sgxtcbcomp16svn": 0,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeSignature.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeSignature.json
+new file mode 100755
+index 0000000..30311c1
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeSignature.json
+@@ -0,0 +1,76 @@
++{
++  "tcbInfo": {
++    "version": 10000000000000000000000000000000000,
++    "issueDate": "2018-06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 3
++        },
++        "status": "Revoked"
++      }
++    ]
++  },
++  "signature": "1c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeStringEscape.json b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeStringEscape.json
+new file mode 100755
+index 0000000..a80f4de
+--- /dev/null
++++ b/tests/fuzztests/seeds/tcbinfoparser/tcbInfoNegativeStringEscape.json
+@@ -0,0 +1,76 @@
++{
++  "tcbInfo": {
++    "version": 1,
++    "issueDate": "2018-\n06-06T10:12:17.085Z",
++    "fmspc": "00906EA10000",
++    "tcbLevels": [
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 4,
++          "sgxtcbcomp02svn": 4,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 5
++        },
++        "status": "UpToDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 4
++        },
++        "status": "OutOfDate"
++      },
++      {
++        "tcb": {
++          "sgxtcbcomp01svn": 2,
++          "sgxtcbcomp02svn": 2,
++          "sgxtcbcomp03svn": 2,
++          "sgxtcbcomp04svn": 4,
++          "sgxtcbcomp05svn": 1,
++          "sgxtcbcomp06svn": 128,
++          "sgxtcbcomp07svn": 1,
++          "sgxtcbcomp08svn": 1,
++          "sgxtcbcomp09svn": 1,
++          "sgxtcbcomp10svn": 1,
++          "sgxtcbcomp11svn": 1,
++          "sgxtcbcomp12svn": 1,
++          "sgxtcbcomp13svn": 1,
++          "sgxtcbcomp14svn": 1,
++          "sgxtcbcomp15svn": 1,
++          "sgxtcbcomp16svn": 1,
++          "pcesvn": 3
++        },
++        "status": "Revoked"
++      }
++    ]
++  },
++  "signature": "62d181c4ba863213b825d1c0b66b92a3dbdb27b8ff7c7250cb2b2ab87a8f90d5e5a1416914369d8f82c56cd3d875caa54ae4b917caf4af7a93dec52067cbfd7b"
++}
+diff --git a/tests/fuzztests/tcbinfoparser.cpp b/tests/fuzztests/tcbinfoparser.cpp
+new file mode 100644
+index 0000000..e669c4c
+--- /dev/null
++++ b/tests/fuzztests/tcbinfoparser.cpp
+@@ -0,0 +1,75 @@
++// Copyright (c) Microsoft Corporation. All rights reserved.
++// Licensed under the MIT License.
++
++#include <assert.h>
++#include <dirent.h>
++#include <stdlib.h>
++#include <string.h>
++#include <fstream>
++#include <vector>
++
++#include "../../common/sgx/tcbinfo.h"
++
++std::vector<uint8_t> FileToBytes(const char* path)
++{
++    std::ifstream f(path, std::ios::binary);
++    std::vector<uint8_t> bytes = std::vector<uint8_t>(
++        std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
++
++    if (bytes.empty())
++    {
++        printf("File %s not found\n", path);
++        exit(1);
++    }
++
++    bytes.push_back('\0');
++    return bytes;
++}
++const char* plattcblevel_status_str(uint32_t status)
++{
++    switch (status)
++    {
++        case OE_TCB_LEVEL_STATUS_UNKNOWN:
++            return "OE_TCB_LEVEL_STATUS_UNKNOWN";
++        case OE_TCB_LEVEL_STATUS_REVOKED:
++            return "OE_TCB_LEVEL_STATUS_REVOKED";
++        case OE_TCB_LEVEL_STATUS_OUT_OF_DATE:
++            return "OE_TCB_LEVEL_STATUS_OUT_OF_DATE";
++        case OE_TCB_LEVEL_STATUS_UP_TO_DATE:
++            return "OE_TCB_LEVEL_STATUS_UP_TO_DATE";
++        case __OE_TCB_LEVEL_MAX:
++            break;
++    }
++    return "UNKNOWN";
++}
++int main(int argc, char** argv)
++{
++    oe_result_t result;
++    std::vector<uint8_t> tcbInfo;
++    oe_parsed_tcb_info_t parsedInfo;
++    oe_tcb_level_t platformTcbLevel = {
++        {4, 4, 2, 4, 1, 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
++        8,
++        OE_TCB_LEVEL_STATUS_UNKNOWN};
++    if (argc != 2)
++    {
++        fprintf(
++            stderr, "Usage: %s << Path to the respective file >> \n", argv[0]);
++        exit(1);
++    }
++
++    tcbInfo = FileToBytes(argv[1]);
++
++    result = oe_parse_tcb_info_json(
++        (uint8_t*)&tcbInfo[0],
++        (uint32_t)tcbInfo.size(),
++        &platformTcbLevel,
++        &parsedInfo);
++
++    printf(
++        "\n Json file Platform TCB LEVEL status = %s\n oe_parse_tcb_info_json "
++        "return = %s\n",
++        plattcblevel_status_str(platformTcbLevel.status),
++        oe_result_str(result));
++    return 0;
++}
+
