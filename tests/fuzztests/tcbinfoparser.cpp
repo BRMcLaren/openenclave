@@ -31,13 +31,6 @@ const char* plattcblevel_status_str(uint32_t status)
     {
         case OE_TCB_LEVEL_STATUS_UNKNOWN:
             return "OE_TCB_LEVEL_STATUS_UNKNOWN";
-        case OE_TCB_LEVEL_STATUS_REVOKED:
-            return "OE_TCB_LEVEL_STATUS_REVOKED";
-        case OE_TCB_LEVEL_STATUS_OUT_OF_DATE:
-            return "OE_TCB_LEVEL_STATUS_OUT_OF_DATE";
-        case OE_TCB_LEVEL_STATUS_UP_TO_DATE:
-            return "OE_TCB_LEVEL_STATUS_UP_TO_DATE";
-        case __OE_TCB_LEVEL_MAX:
             break;
     }
     return "UNKNOWN";
