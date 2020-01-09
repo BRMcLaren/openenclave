@@ -41,10 +41,12 @@ int main(int argc, char** argv)
     qeIndentityInfo = FileToBytes(argv[1]);
 
     oe_parsed_qe_identity_info_t parsedinfo;
+    oe_qe_identity_info_tcb_level_t platform_tcb_level = {{0}};
 
     result = oe_parse_qe_identity_info_json(
         (uint8_t*)&qeIndentityInfo[0],
         (uint32_t)qeIndentityInfo.size(),
+        &platform_tcb_level,
         &parsedinfo);
 
     printf(
