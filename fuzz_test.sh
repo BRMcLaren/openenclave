@@ -9,9 +9,9 @@
 #cd ..
 
 # build OE samples
-export CC=gcc
-. build/output/share/openenclave/openenclaverc
-find samples  -name Makefile -execdir make \;
+#export CC=gcc
+#. build/output/share/openenclave/openenclaverc
+#find samples  -name Makefile -execdir make \;
 
 # create fuzz test folders
 sudo mkdir /oesigndump /oesigndump/seeds /oesignsign /oesignsign/seeds /oeedger8r /oeedger8r/seeds /tcbinfo_test /tcbinfo_test/seeds /sgxextensions_test /sgxextensions_test/seeds /qeidentity_test /qeidentity_test/seeds
