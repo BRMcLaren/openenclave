@@ -17,7 +17,7 @@ find samples  -name Makefile -execdir make \;
 sudo mkdir /oesigndump /oesigndump/seeds /oesignsign /oesignsign/seeds /oeedger8r /oeedger8r/seeds /tcbinfo_test /tcbinfo_test/seeds /sgxextensions_test /sgxextensions_test/seeds /qeidentity_test /qeidentity_test/seeds
 
 # copy test collaterals for oeedger8r
-sudo cp build/tools/oeedger8r/oeedger8r /oeedger8r/
+sudo cp build/tools/oeedger8r/_build/install/default/bin/oeedger8r /oeedger8r/
 sudo cp `find samples -name *.edl` /oeedger8r/seeds
 
 # copy test collaterals for oesign dump
