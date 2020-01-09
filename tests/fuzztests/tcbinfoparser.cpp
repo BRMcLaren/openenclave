@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     oe_result_t result;
     std::vector<uint8_t> tcbInfo;
     oe_parsed_tcb_info_t parsedInfo;
-    oe_tcb_info_tcb_level_t platform_tcb_level  = {
+    oe_tcb_info_tcb_level_t platform_tcb_level = {
         {4, 4, 2, 4, 1, 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
         8,
         {{OE_TCB_LEVEL_STATUS_UNKNOWN}}};
@@ -56,7 +56,12 @@ int main(int argc, char** argv)
     result = oe_parse_tcb_info_json(
         (uint8_t*)&tcbInfo[0],
         (uint32_t)tcbInfo.size(),
-        &platform_tcb_level ,
+        &platform_tcb_level,
         &parsedInfo);
+
+    printf(
+        "\n oe_parse_qe_identity_info_json "
+        "return = %s\n",
+        oe_result_str(result));
     return 0;
 }

@@ -38,9 +38,12 @@ int main(int argc, char** argv)
             stderr, "Usage: %s << Path to the respective file >> \n", argv[0]);
         exit(1);
     }
-    setenv("AZDCAP_BASE_CERT_URL", "https://americas.test.acccache.azure.net/sgx/certificates", 1);
+    setenv(
+        "AZDCAP_BASE_CERT_URL",
+        "https://americas.test.acccache.azure.net/sgx/certificates",
+        1);
     report = FileToBytes(argv[1]);
-    result = oe_verify_remote_report( &report[0], report.size() - 1, NULL);
+    result = oe_verify_remote_report(&report[0], report.size() - 1, NULL);
     printf("\n the string is %s \n", oe_result_str(result));
 
     return 0;

@@ -1,12 +1,12 @@
 # !!!! run this from root directory of openenclave !!!!
 
 # build OE
-mkdir build
-cd build
-cmake .. -DUSE_LIBSGX=OFF
-sudo make
-sudo make install
-cd ..
+#mkdir build
+#cd build
+#cmake .. -DUSE_LIBSGX=OFF
+#sudo make
+#sudo make install
+#cd ..
 
 # build OE samples
 export CC=gcc
