@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <openenclave/bits/report.h>
 #include <openenclave/host.h>
+#include <openenclave/host_verify.h>
 #include <openenclave/internal/report.h>
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
         "https://americas.test.acccache.azure.net/sgx/certificates",
         1);
     report = FileToBytes(argv[1]);
-    result = oe_verify_remote_report(&report[0], report.size() - 1, NULL);
+    result = oe_verify_remote_report(&report[0], report.size() - 1, NULL, 0, NULL);
     printf("\n the string is %s \n", oe_result_str(result));
 
     return 0;
