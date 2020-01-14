@@ -74,5 +74,6 @@ steps:
       for f in *;do sudo mv $f $f.unsigned;done
 
       cd ~/
+      sudo chmod -R 777 ~/fuzzUpload
       sudo apt-get install zip gzip tar -y
       zip -r linux-bins.zip ~/fuzzUpload
