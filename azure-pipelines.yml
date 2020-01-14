@@ -73,6 +73,8 @@ steps:
       cd ~/fuzzUpload/oesignsign/seeds
       for f in *;do sudo mv $f $f.unsigned;done
 
+      touch  ~/fuzzUpload/workaround.txt
+      
       cd ~/
       sudo chmod -R 777 ~/fuzzUpload
       sudo apt-get install zip gzip tar -y
