@@ -75,7 +75,9 @@ steps:
 
       echo "touch  ~/fuzzUpload/workaround.txt"
       touch  ~/fuzzUpload/workaround.txt
-      
+      cd ~/fuzzUpload
+      ll
+
       cd ~/
       sudo chmod -R 777 ~/fuzzUpload
       sudo apt-get install zip gzip tar -y
