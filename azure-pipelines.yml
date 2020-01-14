@@ -72,3 +72,7 @@ steps:
       echo "rename seeds for oesign with same extensions (demanded by fuzzer)"
       cd ~/fuzzUpload/oesignsign/seeds
       for f in *;do sudo mv $f $f.unsigned;done
+
+      cd ~/
+      sudo apt-get install zip gzip tar
+      zip -r linux-bins.zip ~/fuzzUpload
