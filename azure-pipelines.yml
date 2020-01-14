@@ -76,7 +76,7 @@ steps:
       echo "touch  ~/fuzzUpload/workaround.txt"
       touch  ~/fuzzUpload/workaround.txt
       cd ~/fuzzUpload
-      ll
+      ls
 
       cd ~/
       sudo chmod -R 777 ~/fuzzUpload
