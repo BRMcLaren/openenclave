@@ -78,11 +78,13 @@ steps:
       cd ~/
       sudo chmod -R 777 ~/fuzzUpload
       sudo apt-get install zip gzip tar -y
-      zip -r - task: AzureFileCopy@3
+      zip -r ~/fuzzUpload
+      
+- task: AzureFileCopy@3
   inputs:
     SourcePath: '~/linux-bins.zip'
     azureSubscription: 'OSTC Lab'
     Destination: 'AzureBlob'
     storage: 'fuzztestingstorage'
     ContainerName: 'linux'
-    BlobPrefix: 'test-' ~/fuzzUpload
+    BlobPrefix: 'test-' 
