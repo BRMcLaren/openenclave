@@ -1,3 +1,5 @@
+# Copyright (c) Open Enclave SDK contributors.
+# Licensed under the MIT License.
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -7,23 +9,66 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      cd openenclave
-      echo "cd openenclave"
-            
+
       echo "sudo scripts/ansible/install-ansible.sh"
       sudo scripts/ansible/install-ansible.sh
-            
+
       echo "sudo ansible-playbook scripts/ansible/oe-contributors-setup.yml"
       sudo ansible-playbook scripts/ansible/oe-contributors-setup.yml
-            
+
       echo "mkdir build"
       mkdir build
-            
+
       echo "cd build"
       cd build
-            
+
       echo "cmake -G"
-      cmake -G "Ninja" ..
-            
-      echo "ninja"
-      ninja
+      cmake -DHAS_QUOTE_PROVIDER=OFF ..
+
+      echo "sudo make"
+      sudo make
+
+      echo "sudo make install"
+      sudo make install
+
+      echo "build OE samples"
+
+      echo "Source openenclaverc"
+      . output/share/openenclave/openenclaverc
+
+      echo "find samples"
+      find samples  -name Makefile -execdir make \;
+
+      echo "create fuzz test folders"
+      mkdir ~/fuzzUpload
+      mkdir ~/fuzzUpload/oesigndump ~/fuzzUpload/oesigndump/seeds ~/fuzzUpload/oesignsign ~/fuzzUpload/oesignsign/seeds ~/fuzzUpload/oeedger8r ~/fuzzUpload/oeedger8r/seeds ~/fuzzUpload/tcbinfo_test ~/fuzzUpload/tcbinfo_test/seeds ~/fuzzUpload/sgxextensions_test ~/fuzzUpload/sgxextensions_test/seeds ~/fuzzUpload/qeidentity_test ~/fuzzUpload/qeidentity_test/seeds
+
+      echo "copy test collaterals for oeedger8r"
+      sudo cp tools/oeedger8r/_build/install/default/bin/oeedger8r  ~/fuzzUpload/oeedger8r/
+      sudo cp `find samples -name *.edl` ~/fuzzUpload/oeedger8r/seeds
+
+      echo "copy test collaterals for oesign dump"
+      sudo cp output/bin/oesign ~/fuzzUpload/oesigndump/oesigndump
+      #sudo cp `find samples -name *.signed` ~/fuzzUpload/oesigndump/seeds
+
+      echo "copy test collaterals for oesign sign"
+      sudo cp output/bin/oesign ~/fuzzUpload/oesignsign/oesignsign
+      #sudo cp `find samples -name *.signed | cut -f -1 -d.` ~/fuzzUpload/oesignsign/seeds
+      sudo cp `find samples -name enc.conf` ~/fuzzUpload/oesignsign/
+      sudo cp `find samples -name private.pem` ~/fuzzUpload/oesignsign/
+
+      echo "copy test collaterals for tcbinfo parser"
+      sudo cp tests/fuzztests/tcbinfo_test ~/fuzzUpload/tcbinfo_test
+      sudo cp tests/fuzztests/seeds/tcbinfoparser/* ~/fuzzUpload/tcbinfo_test/seeds
+
+      echo "copy test collaterals for sgx extension parser"
+      sudo cp tests/fuzztests/sgxextensions_test ~/fuzzUpload/sgxextensions_test
+      sudo cp tests/fuzztests/seeds/parcesgxextensions/* ~/fuzzUpload/sgxextensions_test/seeds
+
+      echo "copy test collaterals for qe identity parser"
+      sudo cp tests/fuzztests/qeidentity_test ~/fuzzUpload/qeidentity_test
+      sudo cp tests/fuzztests/seeds/qeidentity/* ~/fuzzUpload/qeidentity_test/seeds
+
+      echo "rename seeds for oesign with same extensions (demanded by fuzzer)"
+      cd ~/fuzzUpload/oesignsign/seeds
+      for f in *;do sudo mv $f $f.unsigned;done
