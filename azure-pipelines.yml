@@ -22,7 +22,7 @@ steps:
       echo "cd build"
       cd build
 
-      echo "cmake -G"
+      echo "cmake -DHAS_QUOTE_PROVIDER=OFF .."
       cmake -DHAS_QUOTE_PROVIDER=OFF ..
 
       echo "sudo make"
