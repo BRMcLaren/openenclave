@@ -10,6 +10,7 @@ steps:
     targetType: 'inline'
     script: |
 
+      echo $LINUX-SAS
       echo "sudo scripts/ansible/install-ansible.sh"
       sudo scripts/ansible/install-ansible.sh
 
