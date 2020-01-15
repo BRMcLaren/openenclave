@@ -33,6 +33,7 @@ steps:
       sudo make install
 
       echo "build OE samples"
+
       cd ..
       echo "Source openenclaverc"
       . build/output/share/openenclave/openenclaverc
@@ -47,7 +48,7 @@ steps:
       mkdir ~/fuzzUpload-seeds/oesigndump ~/fuzzUpload-seeds/oesigndump/seeds ~/fuzzUpload-seeds/oesignsign ~/fuzzUpload-seeds/oesignsign/seeds ~/fuzzUpload-seeds/oeedger8r ~/fuzzUpload-seeds/oeedger8r/seeds ~/fuzzUpload-seeds/tcbinfo_test ~/fuzzUpload-seeds/tcbinfo_test/seeds ~/fuzzUpload-seeds/sgxextensions_test ~/fuzzUpload-seeds/sgxextensions_test/seeds ~/fuzzUpload-seeds/qeidentity_test ~/fuzzUpload-seeds/qeidentity_test/seeds
 
       echo "copy test collaterals for oeedger8r"
-      sudo cp build/tools/oeedger8r/_build/install/default/bin/oeedger8r  ~/fuzzUpload/oeedger8r/
+      sudo cp build/tools/oeedger8r/_build/install/default/bin/oeedger8r ~/fuzzUpload-bins/oeedger8r/
       sudo cp `find samples -name *.edl` ~/fuzzUpload-seeds/oeedger8r/seeds
 
       echo "copy test collaterals for oesign dump"
@@ -61,7 +62,7 @@ steps:
       sudo cp `find samples -name private.pem` ~/fuzzUpload-seeds/oesignsign/
 
       echo "copy test collaterals for tcbinfo parser"
-      sudo cp build/tests/fuzztests/tcbinfo_test ~/fuzzUpload/tcbinfo_test
+      sudo cp build/tests/fuzztests/tcbinfo_test ~/fuzzUpload-bins/tcbinfo_test
       sudo cp build/tests/fuzztests/seeds/tcbinfoparser/* ~/fuzzUpload-seeds/tcbinfo_test/seeds
 
       echo "copy test collaterals for sgx extension parser"
