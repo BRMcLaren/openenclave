@@ -10,7 +10,7 @@ steps:
     targetType: 'inline'
     script: |
 
-      echo $LINUX-SAS
+      echo $(linux-sas)
       echo "sudo scripts/ansible/install-ansible.sh"
       sudo scripts/ansible/install-ansible.sh
 
@@ -95,5 +95,5 @@ steps:
       #Move AzCopy to the destination you want to store it
       sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/
 
-      azcopy copy 'linux-bins.zip' 'https://fuzztestingstorage.blob.core.windows.net/$LINUX-SAS'
-      azcopy copy 'linux-seeds.zip' 'https://fuzztestingstorage.blob.core.windows.net/$LINUX-SAS'
+      azcopy copy 'linux-bins.zip' 'https://fuzztestingstorage.blob.core.windows.net/$(linux-sas)'
+      azcopy copy 'linux-seeds.zip' 'https://fuzztestingstorage.blob.core.windows.net/$(linux-sas)'
