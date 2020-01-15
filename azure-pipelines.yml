@@ -40,48 +40,47 @@ steps:
       find samples  -name Makefile -execdir make \;
 
       echo "create fuzz test folders"
-      mkdir ~/fuzzUpload
-      mkdir ~/fuzzUpload/oesigndump ~/fuzzUpload/oesigndump/seeds ~/fuzzUpload/oesignsign ~/fuzzUpload/oesignsign/seeds ~/fuzzUpload/oeedger8r ~/fuzzUpload/oeedger8r/seeds ~/fuzzUpload/tcbinfo_test ~/fuzzUpload/tcbinfo_test/seeds ~/fuzzUpload/sgxextensions_test ~/fuzzUpload/sgxextensions_test/seeds ~/fuzzUpload/qeidentity_test ~/fuzzUpload/qeidentity_test/seeds
+      mkdir ~/fuzzUpload-bins
+      mkdir ~/fuzzUpload-seeds
+      mkdir ~/fuzzUpload-bins/oesigndump ~/fuzzUpload-seeds/oesigndump/seeds ~/fuzzUpload-bins/oesignsign ~/fuzzUpload-seeds/oesignsign/seeds ~/fuzzUpload-bins/oeedger8r ~/fuzzUpload-seeds/oeedger8r/seeds ~/fuzzUpload/tcbinfo_test ~/fuzzUpload-seeds/tcbinfo_test/seeds ~/fuzzUpload-bins/sgxextensions_test ~/fuzzUpload-seeds/sgxextensions_test/seeds ~/fuzzUpload-bins/qeidentity_test ~/fuzzUpload-seeds/qeidentity_test/seeds
 
       echo "copy test collaterals for oeedger8r"
       sudo cp build/tools/oeedger8r/_build/install/default/bin/oeedger8r  ~/fuzzUpload/oeedger8r/
-      sudo cp `find samples -name *.edl` ~/fuzzUpload/oeedger8r/seeds
+      sudo cp `find samples -name *.edl` ~/fuzzUpload-seeds/oeedger8r/seeds
 
       echo "copy test collaterals for oesign dump"
-      sudo cp build/output/bin/oesign ~/fuzzUpload/oesigndump/oesigndump
-      sudo cp `find samples -name *.signed` ~/fuzzUpload/oesigndump/seeds
+      sudo cp build/output/bin/oesign ~/fuzzUpload-bins/oesigndump/oesigndump
+      sudo cp `find samples -name *.signed` ~/fuzzUpload-seeds/oesigndump/seeds
 
       echo "copy test collaterals for oesign sign"
-      sudo cp build/output/bin/oesign ~/fuzzUpload/oesignsign/oesignsign
-      sudo cp `find samples -name *.signed | cut -f -1 -d.` ~/fuzzUpload/oesignsign/seeds
-      sudo cp `find samples -name enc.conf` ~/fuzzUpload/oesignsign/
-      sudo cp `find samples -name private.pem` ~/fuzzUpload/oesignsign/
+      sudo cp build/output/bin/oesign ~/fuzzUpload-bins/oesignsign/oesignsign
+      sudo cp `find samples -name *.signed | cut -f -1 -d.` ~/fuzzUpload-seeds/oesignsign/seeds
+      sudo cp `find samples -name enc.conf` ~/fuzzUpload-seeds/oesignsign/
+      sudo cp `find samples -name private.pem` ~/fuzzUpload-seeds/oesignsign/
 
       echo "copy test collaterals for tcbinfo parser"
       sudo cp build/tests/fuzztests/tcbinfo_test ~/fuzzUpload/tcbinfo_test
-      sudo cp build/tests/fuzztests/seeds/tcbinfoparser/* ~/fuzzUpload/tcbinfo_test/seeds
+      sudo cp build/tests/fuzztests/seeds/tcbinfoparser/* ~/fuzzUpload-seeds/tcbinfo_test/seeds
 
       echo "copy test collaterals for sgx extension parser"
-      sudo cp build/tests/fuzztests/sgxextensions_test ~/fuzzUpload/sgxextensions_test
-      sudo cp build/tests/fuzztests/seeds/parcesgxextensions/* ~/fuzzUpload/sgxextensions_test/seeds
+      sudo cp build/tests/fuzztests/sgxextensions_test ~/fuzzUpload-bins/sgxextensions_test
+      sudo cp build/tests/fuzztests/seeds/parcesgxextensions/* ~/fuzzUpload-seeds/sgxextensions_test/seeds
 
       echo "copy test collaterals for qe identity parser"
-      sudo cp build/tests/fuzztests/qeidentity_test ~/fuzzUpload/qeidentity_test
-      sudo cp build/tests/fuzztests/seeds/qeidentity/* ~/fuzzUpload/qeidentity_test/seeds
+      sudo cp build/tests/fuzztests/qeidentity_test ~/fuzzUpload-bins/qeidentity_test
+      sudo cp build/tests/fuzztests/seeds/qeidentity/* ~/fuzzUpload-seeds/qeidentity_test/seeds
 
       echo "rename seeds for oesign with same extensions (demanded by fuzzer)"
-      cd ~/fuzzUpload/oesignsign/seeds
+      cd ~/fuzzUpload-seeds/oesignsign/seeds
       for f in *;do sudo mv $f $f.unsigned;done
 
-      echo "touch  ~/fuzzUpload/workaround.txt"
-      touch  ~/fuzzUpload/workaround.txt
-      cd ~/fuzzUpload
-      ls
+      cd ~/
+      sudo chmod -R 777 ~/fuzzUpload-bins
+      zip -r linux-bins.zip ~/fuzzUpload-bins
 
       cd ~/
-      sudo chmod -R 777 ~/fuzzUpload
-      sudo apt-get install zip gzip tar -y
-      zip -r linux-bins.zip ~/fuzzUpload
+      sudo chmod -R 777 ~/fuzzUpload-seeds
+      zip -r linux-seeds.zip ~/fuzzUpload-seeds
       
       #Download AzCopy
       wget https://aka.ms/downloadazcopy-v10-linux
@@ -96,3 +95,4 @@ steps:
       sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/
 
       azcopy copy 'linux-bins.zip' 'https://fuzztestingstorage.blob.core.windows.net/$LINUX-SAS'
+      azcopy copy 'linux-seeds.zip' 'https://fuzztestingstorage.blob.core.windows.net/$LINUX-SAS'
