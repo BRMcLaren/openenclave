@@ -95,4 +95,4 @@ steps:
       #Move AzCopy to the destination you want to store it
       sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/
 
-      azcopy copy 'linux-bins.zip' 'https://fuzztestingstorage.blob.core.windows.net/$LINUX-SAS
+      azcopy copy 'linux-bins.zip' 'https://fuzztestingstorage.blob.core.windows.net/$LINUX-SAS'
