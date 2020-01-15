@@ -83,11 +83,16 @@ steps:
       sudo apt-get install zip gzip tar -y
       zip -r linux-bins.zip ~/fuzzUpload
       
-- task: AzureFileCopy@3
-  inputs:
-    SourcePath: '~/linux-bins.zip'
-    azureSubscription: 'OSTC Lab'
-    Destination: 'AzureBlob'
-    storage: 'fuzztestingstorage'
-    ContainerName: 'linux'
-    BlobPrefix: 'test-' 
+      #Download AzCopy
+      wget https://aka.ms/downloadazcopy-v10-linux
+      
+      #Expand Archive
+      tar -xvf downloadazcopy-v10-linux
+      
+      #(Optional) Remove existing AzCopy version
+      sudo rm /usr/bin/azcopy
+      
+      #Move AzCopy to the destination you want to store it
+      sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/
+
+      azcopy copy 'linux-bins.zip' 'https://fuzztestingstorage.blob.core.windows.net/$LINUX-SAS
