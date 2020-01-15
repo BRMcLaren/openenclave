@@ -10,7 +10,7 @@ steps:
     targetType: 'inline'
     script: |
 
-      echo $(linux-sas)
+      lsb_release -a
       echo "sudo scripts/ansible/install-ansible.sh"
       sudo scripts/ansible/install-ansible.sh
 
