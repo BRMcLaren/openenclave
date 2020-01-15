@@ -43,7 +43,8 @@ steps:
       echo "create fuzz test folders"
       mkdir ~/fuzzUpload-bins
       mkdir ~/fuzzUpload-seeds
-      mkdir ~/fuzzUpload-bins/oesigndump ~/fuzzUpload-seeds/oesigndump/seeds ~/fuzzUpload-bins/oesignsign ~/fuzzUpload-seeds/oesignsign/seeds ~/fuzzUpload-bins/oeedger8r ~/fuzzUpload-seeds/oeedger8r/seeds ~/fuzzUpload/tcbinfo_test ~/fuzzUpload-seeds/tcbinfo_test/seeds ~/fuzzUpload-bins/sgxextensions_test ~/fuzzUpload-seeds/sgxextensions_test/seeds ~/fuzzUpload-bins/qeidentity_test ~/fuzzUpload-seeds/qeidentity_test/seeds
+      mkdir ~/fuzzUpload-bins/oesigndump ~/fuzzUpload-bins/oesignsign ~/fuzzUpload-bins/oeedger8r ~/fuzzUpload-bins/tcbinfo_test  ~/fuzzUpload-bins/sgxextensions_test ~/fuzzUpload-bins/qeidentity_test 
+      mkdir ~/fuzzUpload-seeds/oesigndump ~/fuzzUpload-seeds/oesigndump/seeds ~/fuzzUpload-seeds/oesignsign ~/fuzzUpload-seeds/oesignsign/seeds ~/fuzzUpload-seeds/oeedger8r ~/fuzzUpload-seeds/oeedger8r/seeds ~/fuzzUpload-seeds/tcbinfo_test ~/fuzzUpload-seeds/tcbinfo_test/seeds ~/fuzzUpload-seeds/sgxextensions_test ~/fuzzUpload-seeds/sgxextensions_test/seeds ~/fuzzUpload-seeds/qeidentity_test ~/fuzzUpload-seeds/qeidentity_test/seeds
 
       echo "copy test collaterals for oeedger8r"
       sudo cp build/tools/oeedger8r/_build/install/default/bin/oeedger8r  ~/fuzzUpload/oeedger8r/
