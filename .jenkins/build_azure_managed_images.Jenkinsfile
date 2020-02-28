@@ -37,7 +37,5 @@ def buildManagedImage(String os_type, String version) {
 
 parallel "Build Ubuntu 16.04"              : { buildManagedImage("ubuntu", "16.04") },
          "Build Ubuntu 18.04"              : { buildManagedImage("ubuntu", "18.04") },
-         "Build RHEL 8"                    : { buildManagedImage("rhel", "8") },
          "Build Windows 2016 SGX1"         : { buildManagedImage("win", "2016-SGX") },
-         "Build Windows 2016 SGX1FLC DCAP" : { buildManagedImage("win", "2016-SGX-DCAP") },
-         "Build Windows 2016 nonSGX"       : { buildManagedImage("win", "2016-nonSGX") }
+         "Build Windows 2016 SGX1FLC DCAP" : { buildManagedImage("win", "2016-SGX-DCAP") }
