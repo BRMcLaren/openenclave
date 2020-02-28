@@ -9,7 +9,7 @@
     "docker_registry": "{{ env `DOCKER_REGISTRY` }}",
     "docker_user_name": "{{ env `DOCKER_USER_NAME` }}",
     "docker_user_password": "{{ env `DOCKER_USER_PASSWORD` }}",
-    "ansible_dir": "{{ env `WORKSPACE` }}/scripts/ansible",
+    "ansible_dir": "/ansible",
     "managed_image_name_id": "{{ env `MANAGED_IMAGE_NAME_ID` }}"
   },
   "builders": [{

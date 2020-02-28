@@ -6,7 +6,7 @@
     "client_secret": "{{ env `SERVICE_PRINCIPAL_PASSWORD` }}",
     "tenant_id": "{{ env `TENANT_ID` }}",
     "location": "{{ env `REGION` }}",
-    "ansible_dir": "{{ env `WORKSPACE` }}/scripts/ansible",
+    "ansible_dir": "/ansible",
     "managed_image_name_id": "{{ env `MANAGED_IMAGE_NAME_ID` }}"
   },
   "builders": [{
