@@ -605,7 +605,7 @@ function Install-DCAP-Dependencies {
     }
     if (($LaunchConfiguration -eq "SGX1FLC") -or ($LaunchConfiguration -eq "SGX1FLC-NoDriver") -or ($DCAPClientType -eq "Azure"))
     {
-        & nuget.exe install 'DCAP_Components' -Source "$PACKAGES_DIRECTORY" -OutputDirectory "$OE_NUGET_DIR" -ExcludeVersion
+        & nuget.exe install 'DCAP_Components' -Source "$PACKAGES_DIRECTORY\Azure_DCAP_Client_nupkg\DCAP_Components" -OutputDirectory "$OE_NUGET_DIR" -ExcludeVersion
         if($LASTEXITCODE -ne 0) {
             Throw "Failed to install nuget DCAP_Components"
         }
