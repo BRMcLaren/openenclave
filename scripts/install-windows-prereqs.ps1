@@ -30,7 +30,7 @@ Param(
     [string]$VCRuntime2012Hash = '681BE3E5BA9FD3DA02C09D7E565ADFA078640ED66A0D58583EFAD2C1E3CC4064',
     [string]$AzureDCAPNupkgURL = 'https://www.nuget.org/api/v2/package/Azure.DCAP.Windows/0.0.3',
     [string]$AzureDCAPNupkgHash = '79C698B61CADA32F56F26647B96BBB1C00B7409A6646597C7CC2908A57677256',
-    [string]$Python3ZipURL = 'https://www.python.org/ftp/python/3.7.4/python-3.7.4-embed-amd64.zip',
+    [string]$Python3ZipURL = 'https://www.python.org/ftp/python/3.7.4/python-3.7.4-embed-amd64.zip',=
     [string]$Python3ZipHash = 'FB65E5CD595AD01049F73B47BC0EE23FD03F0CBADC56CB318990CEE83B37761B',
     [string]$NSISURL = 'https://oejenkins.blob.core.windows.net/oejenkins/nsis-3.05-setup.exe',
     [string]$NSISHash = '1A3CC9401667547B9B9327A177B13485F7C59C2303D4B6183E7BC9E6C8D6BFDB',
