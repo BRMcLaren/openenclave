@@ -31,7 +31,7 @@
         az_dcap_client_url:  "https://www.nuget.org/api/v2/package/Azure.DCAP.Windows/0.0.3"
         az_dcap_client_hash: "79C698B61CADA32F56F26647B96BBB1C00B7409A6646597C7CC2908A57677256"
 
-    - name: OE setup | Run the install-windows-prereqs.ps1 script (this may take a while)
+    - name: OE setup | Run the install-windows-prereqs.ps1 script (this may take aaa while)
       script: ../install-windows-prereqs.ps1
         -InstallPath         "C:\oe_prereqs"
         -LaunchConfiguration "SGX1FLC-NoDriver"
