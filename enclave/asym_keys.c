@@ -339,7 +339,7 @@ done:
     if (key != NULL)
     {
         oe_secure_zero_fill(key, key_size);
-        oe_free(key);
+        free(key);
     }
 
     return result;
