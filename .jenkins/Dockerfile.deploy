@@ -8,8 +8,7 @@ ARG GNAME=jenkins
 ARG UID=1000
 ARG GID=1000
 
-COPY scripts/ansible /ansible
-ADD scripts/install-windows-prereqs.ps1 /
+COPY scripts/ansible/install-ansible.sh /tmp/install-ansible.sh
 
 RUN apt-get update && \
     apt-get -y upgrade && \
@@ -30,5 +29,5 @@ RUN apt-get update && \
     rm packer_1.4.5_linux_amd64.zip && \
     groupadd --gid ${GID} ${GNAME} && \
     useradd --create-home --uid ${UID} --gid ${GID} --shell /bin/bash ${UNAME} && \
-    chown ${UID}:${GID} -R /ansible && \
-    /ansible/install-ansible.sh
+    /tmp/install-ansible.sh && \
+    rm /tmp/install-ansible.sh
