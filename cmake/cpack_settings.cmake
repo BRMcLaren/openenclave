@@ -29,6 +29,6 @@ set(CPACK_COMPONENT_OEHOSTVERIFY_DESCRIPTION "Open Enclave Report Verification H
 set(CPACK_NUGET_PACKAGE_NAME "open-enclave")
 set(CPACK_NUGET_PACKAGE_AUTHORS "Open Enclave SDK Contributors")
 set(CPACK_NUGET_PACKAGE_VERSION ${OE_VERSION})
-set(CPACK_NUGET_PACKAGE_LICENSEURL "https://github.com/openenclave/openenclave/blob/master/LICENSE")
+set(CPACK_NUGET_PACKAGE_LICENSE "https://github.com/openenclave/openenclave/blob/master/LICENSE")
 
 include(CPack)
