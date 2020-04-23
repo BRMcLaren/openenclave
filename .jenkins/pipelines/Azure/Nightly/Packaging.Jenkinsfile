@@ -34,13 +34,19 @@ def LinuxPackaging(String version, String build_type, String lvi_mitigation = 'N
     }
 }
 
-def WindowsPackaging(String build_type, String lvi_mitigation = 'None') {
-    stage("Windows SGX1FLC ${build_type} LVI_MITIGATION=${lvi_mitigation}") {
-        node('SGXFLC-Windows-DCAP') {
-            timeout(GLOBAL_TIMEOUT_MINUTES) {
-                oe.WinCompilePackageTest("build", build_type, "ON", CTEST_TIMEOUT_SECONDS, lvi_mitigation)
-                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "master/${BUILD_NUMBER}/windows/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
-                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "master/latest/windows/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
+def WindowsPackaging(String label, String build_type, String has_quote_provider = 'OFF', String lvi_mitigation = 'None', String OE_SIMULATION = "0", String lvi_mitigation_skip_tests = 'OFF') {
+    def node_label = AGENTS_LABELS[label]
+    if (has_quote_provider == "ON") {
+        node_label = AGENTS_LABELS["${label}-dcap"]
+    }
+    stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation}") {
+        node(node_label) {
+            withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
+                timeout(GLOBAL_TIMEOUT_MINUTES) {
+                oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
+                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "v0.9.x/${BUILD_NUMBER}/windows/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
+                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "v0.9.x/latest/windows/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
+                }
             }
         }
     }
@@ -48,22 +54,22 @@ def WindowsPackaging(String build_type, String lvi_mitigation = 'None') {
 
 try{
     oe.emailJobStatus('STARTED')
-    parallel "1604 SGX1FLC Package Debug" :          { LinuxPackaging('1604', 'Debug') },
-         "1604 SGX1FLC Package Debug LVI" :          { LinuxPackaging('1604', 'Debug', 'ControlFlow') },
-         "1604 SGX1FLC Package Release" :            { LinuxPackaging('1604', 'Release') },
-         "1604 SGX1FLC Package Release LVI" :        { LinuxPackaging('1604', 'Release', 'ControlFlow') },
-         "1604 SGX1FLC Package RelWithDebInfo" :     { LinuxPackaging('1604', 'RelWithDebInfo') },
-         "1604 SGX1FLC Package RelWithDebInfo LVI" : { LinuxPackaging('1604', 'RelWithDebInfo', 'ControlFlow') },
-         "1804 SGX1FLC Package Debug" :              { LinuxPackaging('1804', 'Debug') },
-         "1804 SGX1FLC Package Debug LVI" :          { LinuxPackaging('1804', 'Debug', 'ControlFlow') },
-         "1804 SGX1FLC Package Release" :            { LinuxPackaging('1804', 'Release') },
-         "1804 SGX1FLC Package Release LVI" :        { LinuxPackaging('1804', 'Release', 'ControlFlow') },
-         "1804 SGX1FLC Package RelWithDebInfo" :     { LinuxPackaging('1804', 'RelWithDebInfo') },
-         "1804 SGX1FLC Package RelWithDebInfo LVI" : { LinuxPackaging('1804', 'RelWithDebInfo', 'ControlFlow') },
-         "Windows Debug" :                           { WindowsPackaging('DEBUG') },
-         "Windows Debug LVI" :                       { WindowsPackaging('DEBUG', 'ControlFlow') },
-         "Windows Release" :                         { WindowsPackaging('RELEASE') },
-         "Windows Release LVI" :                     { WindowsPackaging('RELEASE', 'ControlFlow') }
+    parallel "1604 SGX1FLC Package Debug" :                         { LinuxPackaging('1604', 'Debug') },
+         "1604 SGX1FLC Package Debug LVI" :                         { LinuxPackaging('1604', 'Debug', 'ControlFlow') },
+         "1604 SGX1FLC Package Release" :                           { LinuxPackaging('1604', 'Release') },
+         "1604 SGX1FLC Package Release LVI" :                       { LinuxPackaging('1604', 'Release', 'ControlFlow') },
+         "1604 SGX1FLC Package RelWithDebInfo" :                    { LinuxPackaging('1604', 'RelWithDebInfo') },
+         "1604 SGX1FLC Package RelWithDebInfo LVI" :                { LinuxPackaging('1604', 'RelWithDebInfo', 'ControlFlow') },
+         "1804 SGX1FLC Package Debug" :                             { LinuxPackaging('1804', 'Debug') },
+         "1804 SGX1FLC Package Debug LVI" :                         { LinuxPackaging('1804', 'Debug', 'ControlFlow') },
+         "1804 SGX1FLC Package Release" :                           { LinuxPackaging('1804', 'Release') },
+         "1804 SGX1FLC Package Release LVI" :                       { LinuxPackaging('1804', 'Release', 'ControlFlow') },
+         "1804 SGX1FLC Package RelWithDebInfo" :                    { LinuxPackaging('1804', 'RelWithDebInfo') },
+         "1804 SGX1FLC Package RelWithDebInfo LVI" :                { LinuxPackaging('1804', 'RelWithDebInfo', 'ControlFlow') },
+         "Win2016 Debug Cross Compile DCAP LVI" :                   { WindowsPackaging('acc-win2016', 'Debug', 'ON', 'ControlFlow', '0', 'ON') },
+         "Win2016 Release Cross Compile DCAP LVI" :                 { WindowsPackaging('acc-win2016', 'Release', 'ON', 'ControlFlow', '0', 'ON') },
+         "Win2019 Debug Cross Compile DCAP LVI" :                   { WindowsPackaging('acc-win2019', 'Debug', 'ON', 'ControlFlow', '0', 'ON') },
+         "Win2019 Release Cross Compile DCAP LVI" :                 { WindowsPackaging('acc-win2019', 'Release', 'ON', 'ControlFlow', '0', 'ON') }
 } catch(Exception e) {
     println "Caught global pipeline exception :" + e
     GLOBAL_ERROR = e
