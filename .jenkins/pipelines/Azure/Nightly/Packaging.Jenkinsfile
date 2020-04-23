@@ -35,17 +35,13 @@ def LinuxPackaging(String version, String build_type, String lvi_mitigation = 'N
 }
 
 def WindowsPackaging(String label, String build_type, String has_quote_provider = 'OFF', String lvi_mitigation = 'None', String OE_SIMULATION = "0", String lvi_mitigation_skip_tests = 'OFF') {
-    def node_label = AGENTS_LABELS[label]
-    if (has_quote_provider == "ON") {
-        node_label = AGENTS_LABELS["${label}-dcap"]
-    }
     stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation}") {
-        node(node_label) {
+        node("${label}-dcap") {
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 timeout(GLOBAL_TIMEOUT_MINUTES) {
                 oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
-                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "v0.9.x/${BUILD_NUMBER}/windows/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
-                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "v0.9.x/latest/windows/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
+                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "v0.9.x/${BUILD_NUMBER}/windows/${label}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
+                azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "v0.9.x/latest/windows/${label}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
                 }
             }
         }
