@@ -1,0 +1,599 @@
+jenkins:
+  clouds:
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Ubuntu 16.04 East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 2
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ubuntu-16.04"
+        imageTopLevelType: "advanced"
+        initScript: "gpasswd -a oeadmin docker \nchmod g+rw /var/run/docker.sock"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "ACC-1604"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 0
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "u1604-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Ubuntu 18.04 East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 2
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ubuntu-18.04"
+        imageTopLevelType: "advanced"
+        initScript: "gpasswd -a oeadmin docker \nchmod g+rw /var/run/docker.sock"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "ACC-1804"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 0
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "u1804-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Ubuntu 16.04 nonSGX East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 1
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ubuntu-16.04"
+        imageTopLevelType: "advanced"
+        initScript: |-
+          gpasswd -a oeadmin docker
+          chmod g+rw /var/run/docker.sock
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "nonSGX"
+        location: "East US"
+        noOfParallelJobs: 4
+        osDiskSize: 0
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "u1604-nonsgx-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_F8s_v2"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production RHEL 8 East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 1
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/rhel-8"
+        imageTopLevelType: "advanced"
+        initScript: |-
+          gpasswd -a oeadmin docker
+          chmod g+rw /var/run/docker.sock
+
+          (echo n; echo; echo; echo; echo t; echo; echo 31; echo w) | fdisk /dev/sda
+          pvcreate /dev/sda4
+          vgextend rootvg /dev/sda4
+          lvextend -l +100%FREE /dev/rootvg/homelv
+          resize2fs /dev/rootvg/homelv
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "ACC-RHEL-8"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 128
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "rhel8-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC2s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Windows Server 2016 SGX East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 2
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ws2016-SGX"
+        imageTopLevelType: "advanced"
+        initScript: "Set-TimeZone -Id \"UTC\" -PassThru"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "SGX-Windows-2016 SGXFLC-Windows"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 200
+        osType: "Windows"
+        preInstallSsh: true
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "ws16-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Windows Server 2016 SGXFLC with DCAP East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 2
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ws2016-SGX-DCAP"
+        imageTopLevelType: "advanced"
+        initScript: "Set-TimeZone -Id \"UTC\" -PassThru"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "SGXFLC-Windows-2016-DCAP SGXFLC-Windows-DCAP"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 200
+        osType: "Windows"
+        preInstallSsh: true
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "ws16-dcap-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Windows Server 2016 nonSGX East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 2
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ws2016-nonSGX"
+        imageTopLevelType: "advanced"
+        initScript: "Set-TimeZone -Id \"UTC\" -PassThru"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "nonSGX-Windows"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 200
+        osType: "Windows"
+        preInstallSsh: true
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "ws16-nonsgx-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_D4s_v3"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Windows Server 2019 SGX East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 2
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ws2019-SGX"
+        imageTopLevelType: "advanced"
+        initScript: "Set-TimeZone -Id \"UTC\" -PassThru"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "SGX-Windows-2019"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 200
+        osType: "Windows"
+        preInstallSsh: true
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "ws19-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Production Windows Server 2019 SGXFLC with DCAP East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 2
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ws2019-SGX-DCAP"
+        imageTopLevelType: "advanced"
+        initScript: "Set-TimeZone -Id \"UTC\" -PassThru"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "SGXFLC-Windows-2019-DCAP"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 200
+        osType: "Windows"
+        preInstallSsh: true
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "ws19-dcap-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Nightly OE Testing Ubuntu 16.04 East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 1
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ubuntu-16.04"
+        imageTopLevelType: "advanced"
+        initScript: "gpasswd -a oeadmin docker \nchmod g+rw /var/run/docker.sock"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "OE-Nightly-Ubuntu-1604"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 128
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "u1604-oe-nightly-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC2s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Nightly OE Testing Ubuntu 18.04 East US"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 1
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ubuntu-18.04"
+        imageTopLevelType: "advanced"
+        initScript: "gpasswd -a oeadmin docker \nchmod g+rw /var/run/docker.sock"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "OE-Nightly-Ubuntu-1804"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 128
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "u1804-oe-nightly-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC2s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Nightly OE Libcxx Ubuntu 16.04 East US"
+      configurationStatus: "pass"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 3
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ubuntu-16.04"
+        imageTopLevelType: "advanced"
+        initScript: "gpasswd -a oeadmin docker \nchmod g+rw /var/run/docker.sock"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "Libcxx-Nightly-Ubuntu-1604"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 128
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "u1604-oe-libcxx-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+  - azureVM:
+      azureCredentialsId: "VMSSJenkinsX"
+      cloudName: "Nightly OE Libcxx Ubuntu 18.04 East US"
+      configurationStatus: "pass"
+      deploymentTimeout: 1200
+      existingResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
+      maxVirtualMachinesLimit: 3
+      resourceGroupReferenceType: "existing"
+      vmTemplates:
+      - agentLaunchMethod: "SSH"
+        builtInImage: "Windows Server 2016"
+        credentialsId: "jx-pipeline-jenkins-jenkins.jx.52.142.23.94.nip.io"
+        diskType: "managed"
+        doNotUseMachineIfInitFails: true
+        enableMSI: false
+        enableUAMI: false
+        ephemeralOSDisk: false
+        executeInitScriptAsRoot: true
+        existingStorageAccountName: "jenkinsxstorageaccount"
+        imageReference:
+          id: "/subscriptions/REDACTED/resourceGroups/OE-Jenkins-Images/providers/Microsoft.Compute/galleries/Production_Images/images/ubuntu-18.04"
+        imageTopLevelType: "advanced"
+        initScript: "gpasswd -a oeadmin docker \nchmod g+rw /var/run/docker.sock"
+        installDocker: false
+        installGit: false
+        installMaven: false
+        labels: "Libcxx-Nightly-Ubuntu-1804"
+        location: "East US"
+        noOfParallelJobs: 1
+        osDiskSize: 128
+        osType: "Linux"
+        preInstallSsh: false
+        retentionStrategy:
+          azureVMCloudRetentionStrategy:
+            idleTerminationMinutes: 5
+        shutdownOnIdle: false
+        storageAccountNameReferenceType: "existing"
+        storageAccountType: "Standard_LRS"
+        subnetName: "aks-subnet"
+        templateDisabled: false
+        templateName: "u1804-oe-libcxx-eastus"
+        usageMode: "Only build jobs with label expressions matching this node"
+        usePrivateIP: false
+        virtualMachineSize: "Standard_DC4s"
+        virtualNetworkName: "aks-vnet-25091381"
+        virtualNetworkResourceGroupName: "MC_shoulderfoil_weedpalm_eastus"
