@@ -1,0 +1,22 @@
+unclassified:
+  globalLibraries:
+    libraries:
+    - defaultVersion: "master"
+      name: "OpenEnclaveCommon"
+      retriever:
+        modernSCM:
+          scm:
+            github:
+              configuredByUrl: true
+              credentialsId: "oe-ci"
+              repoOwner: "openenclave"
+              repository: "openenclave-ci"
+              repositoryUrl: "https://github.com/openenclave/openenclave-ci.git"
+              traits:
+              - gitHubBranchDiscovery:
+                  strategyId: 1
+              - gitHubPullRequestDiscovery:
+                  strategyId: 1
+              - gitHubForkDiscovery:
+                  strategyId: 1
+                  trust: "gitHubTrustPermissions"
