@@ -11,7 +11,7 @@ GLOBAL_ERROR = null
 REPOSITORY_NAME = env.REPOSITORY_NAME ?: "openenclave/openenclave"
 BRANCH_NAME = env.BRANCH_NAME ?: "master"
 DOCKER_TAG = env.DOCKER_TAG ?: "latest"
-FULL_TEST_SUITE = env.FULL_TEST_SUITE ?: false
+FULL_TEST_SUITE = env.FULL_TEST_SUITE ?: true
 
 AGENTS_LABELS = [
     "acc-ubuntu-16.04": env.UBUNTU_1604_CUSTOM_LABEL ?: "ACC-1604",
