@@ -94,7 +94,7 @@ def windowsCrossCompilee2e(String label, String build_type, String has_quote_pro
 
 def PowerShell(psCmd) {
     psCmd=psCmd.replaceAll("%", "%%")
-    bat "powershell.exe -NonInteractive -ExecutionPolicy Bypass -Command \"\$ErrorActionPreference='Stop';[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;$psCmd;EXIT \$global:LastExitCode\""
+    bat "powershell.exe -NonInteractive -ExecutionPolicy Bypass -Command \"\$ErrorActionPreference='Stop';[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;$psCmd -InstallPath C:/oe_prereqs -LaunchConfiguration SGX1FLC -DCAPClientType Azure;EXIT \$global:LastExitCode\""
 }
 
 properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '90',
