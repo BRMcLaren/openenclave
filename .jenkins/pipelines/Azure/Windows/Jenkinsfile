@@ -82,8 +82,7 @@ def windowsCrossCompilee2e(String label, String build_type, String has_quote_pro
     }
     stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation} E2E Lite") {
         node(node_label) {
-            powershell(returnStatus: true, script: 'Write-Host "hello"')
-            powershell(returnStatus: true, script: '.\\scripts\\install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs')
+            powershell(returnStatus: true, script: '.\\scripts\install-windows-prereqs.ps1')
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 timeout(GLOBAL_TIMEOUT_MINUTES) {
                     oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
