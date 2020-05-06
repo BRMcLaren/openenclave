@@ -80,9 +80,9 @@ def windowsCrossCompilee2e(String label, String build_type, String has_quote_pro
     if (has_quote_provider == "ON") {
         node_label = AGENTS_LABELS["${label}-dcap"]
     }
-    stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation}") {
+    stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation} E2E Lite") {
         node(node_label) {
-            powershell returnStatus: true, script: '.\\scripts\\install-windows-prereqs.ps1'
+            PowerShell(". '.\\scripts\\install-windows-prereqs.ps1'") 
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 timeout(GLOBAL_TIMEOUT_MINUTES) {
                     oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
@@ -90,6 +90,11 @@ def windowsCrossCompilee2e(String label, String build_type, String has_quote_pro
             }
         }
     }
+}
+
+def PowerShell(psCmd) {
+    psCmd=psCmd.replaceAll("%", "%%")
+    bat "powershell.exe -NonInteractive -ExecutionPolicy Bypass -Command \"\$ErrorActionPreference='Stop';[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;$psCmd;EXIT \$global:LastExitCode\""
 }
 
 properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '90',
@@ -141,15 +146,16 @@ try{
       }
     } else {
       stage("PR Testing") {
-        parallel "Win2016 Ubuntu1804 clang-7 Release Linux-Elf-build LVI" : { windowsLinuxElfBuild('acc-win2016-dcap', '18.04', 'clang-7', 'Release', 'ControlFlow', 'ON') },
-                 "Win2016 Sim Release Cross Compile LVI " :                 { windowsCrossCompile('acc-win2016', 'Release', 'OFF', 'ControlFlow', '1', 'ON') },
-                 "Win2016 Debug Cross Compile DCAP LVI" :                   { windowsCrossCompile('acc-win2016', 'Debug', 'ON', 'ControlFlow', '0', 'ON') },
-                 "Win2016 Release Cross Compile DCAP LVI" :                 { windowsCrossCompile('acc-win2016', 'Release', 'ON', 'ControlFlow', '0', 'ON') },
-                 "Win2019 Ubuntu1804 clang-7 Release Linux-Elf-build LVI" : { windowsLinuxElfBuild('acc-win2019-dcap', '18.04', 'clang-7', 'Release', 'ControlFlow', 'ON') },
-                 "Win2019 Sim Release Cross Compile LVI " :                 { windowsCrossCompile('acc-win2019', 'Release', 'OFF', 'ControlFlow', '1', 'ON') },
-                 "Win2019 Debug Cross Compile DCAP LVI" :                   { windowsCrossCompile('acc-win2019', 'Debug', 'ON', 'ControlFlow', '0', 'ON') },
-                 "Win2019 Release Cross Compile DCAP LVI" :                 { windowsCrossCompile('acc-win2019', 'Release', 'ON', 'ControlFlow', '0', 'ON') },
-                 "Win2016 Cross Compile DCAP LVI E2E" :                     { windowsCrossCompilee2e('acc-win2016', 'Debug', 'ON', 'ControlFlow', '0', 'ON') }
+        parallel "Win2016 Cross Compile DCAP LVI E2E" :                     { windowsCrossCompilee2e('acc-win2016', 'Debug', 'ON', 'ControlFlow', '0', 'ON') }
+                 //"Win2016 Ubuntu1804 clang-7 Release Linux-Elf-build LVI" : { windowsLinuxElfBuild('acc-win2016-dcap', '18.04', 'clang-7', 'Release', 'ControlFlow', 'ON') },
+                 //"Win2016 Sim Release Cross Compile LVI " :                 { windowsCrossCompile('acc-win2016', 'Release', 'OFF', 'ControlFlow', '1', 'ON') },
+                 //"Win2016 Debug Cross Compile DCAP LVI" :                   { windowsCrossCompile('acc-win2016', 'Debug', 'ON', 'ControlFlow', '0', 'ON') },
+                 //"Win2016 Release Cross Compile DCAP LVI" :                 { windowsCrossCompile('acc-win2016', 'Release', 'ON', 'ControlFlow', '0', 'ON') },
+                 //"Win2019 Ubuntu1804 clang-7 Release Linux-Elf-build LVI" : { windowsLinuxElfBuild('acc-win2019-dcap', '18.04', 'clang-7', 'Release', 'ControlFlow', 'ON') },
+                 //"Win2019 Sim Release Cross Compile LVI " :                 { windowsCrossCompile('acc-win2019', 'Release', 'OFF', 'ControlFlow', '1', 'ON') },
+                 //"Win2019 Debug Cross Compile DCAP LVI" :                   { windowsCrossCompile('acc-win2019', 'Debug', 'ON', 'ControlFlow', '0', 'ON') },
+                 //"Win2019 Release Cross Compile DCAP LVI" :                 { windowsCrossCompile('acc-win2019', 'Release', 'ON', 'ControlFlow', '0', 'ON') },
+                 //"Win2016 Cross Compile DCAP LVI E2E" :                     { windowsCrossCompilee2e('acc-win2016', 'Debug', 'ON', 'ControlFlow', '0', 'ON') }
       }
     }
 } catch(Exception e) {
