@@ -602,6 +602,11 @@ function Install-DCAP-Dependencies {
                 }
                 Write-Output $install
             }
+            elseif (($LaunchConfiguration -eq "SGX1FLC-NoDriver") -and (${OS_VERSION} -ne "WinServer2019"))
+            {
+                 Write-Output "Copying Intel_SGX_DCAP dll files into $($env:SystemRoot)\system32"
+                 Copy-item -Path $PACKAGES_DIRECTORY\Intel_SGX_DCAP\$driver\drivers\*\*.dll $env:SystemRoot\system32\
+            }
         }
     }
 
