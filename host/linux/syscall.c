@@ -271,7 +271,7 @@ int oe_syscall_closedir_ocall(uint64_t dirp)
     return closedir((DIR*)dirp);
 }
 
-int oe_syscall_stat_ocall(const char* pathname, struct oe_stat* buf)
+int oe_syscall_stat_ocall(const char* pathname, struct oe_stat_t* buf)
 {
     int ret = -1;
     struct stat st;
@@ -859,6 +859,21 @@ done:
         free(handle);
 
     return ret;
+}
+
+size_t _strcpy_to_utf8(
+    char* ai_canonname_buf,
+    size_t ai_canonname_buf_len,
+    void* ai_canonname)
+{
+    const char* canonname = (const char*)ai_canonname;
+
+    size_t buf_needed = strlen(canonname) + 1;
+    if (buf_needed <= ai_canonname_buf_len)
+    {
+        memcpy(ai_canonname_buf, canonname, buf_needed);
+    }
+    return buf_needed;
 }
 
 int oe_syscall_getaddrinfo_read_ocall(

@@ -361,8 +361,8 @@ static void test_rename_file(FILE_SYSTEM& fs, const char* tmp_dir)
 
     printf("--- %s()\n", __FUNCTION__);
 
-    mkpath(oldname, tmp_dir, "alphabet.linked"),
-        mkpath(newname, tmp_dir, "alphabet.renamed");
+    mkpath(oldname, tmp_dir, "alphabet.linked");
+    mkpath(newname, tmp_dir, "alphabet.renamed");
 
     OE_TEST(fs.rename(oldname, newname) == 0);
     OE_TEST(fs.stat(oldname, &buf) != 0);
@@ -416,13 +416,11 @@ static void test_invalid_path(FILE_SYSTEM& fs)
 }
 
 template <class FILE_SYSTEM>
-void test_all(FILE_SYSTEM& fs, const char* tmp_dir)
+void test_common(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     cleanup(fs, tmp_dir);
     test_create_file(fs, tmp_dir);
     test_read_file(fs, tmp_dir);
-    test_pread_file(fs, tmp_dir);
-    test_pwrite_file(fs, tmp_dir);
     test_stat_file(fs, tmp_dir);
     test_link_file(fs, tmp_dir);
     test_rename_file(fs, tmp_dir);
@@ -430,6 +428,16 @@ void test_all(FILE_SYSTEM& fs, const char* tmp_dir)
     test_truncate_file(fs, tmp_dir);
     test_unlink_file(fs, tmp_dir);
     test_invalid_path(fs);
+    cleanup(fs, tmp_dir);
+}
+
+template <class FILE_SYSTEM>
+void test_pio(FILE_SYSTEM& fs, const char* tmp_dir)
+{
+    cleanup(fs, tmp_dir);
+    test_create_file(fs, tmp_dir);
+    test_pread_file(fs, tmp_dir);
+    test_pwrite_file(fs, tmp_dir);
     cleanup(fs, tmp_dir);
 }
 
@@ -641,7 +649,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 
     OE_TEST(oe_mkdir_d(OE_DEVID_HOST_FILE_SYSTEM, tmp_dir, 0777) == 0);
 
-    printf("=== running all tests\n");
+    printf("=== running common tests\n");
     printf("--- src_dir=%s\n", src_dir);
     printf("--- tmp_dir=%s\n", tmp_dir);
 
@@ -650,7 +658,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         printf("=== testing oe-fd-hostfs:\n");
 
         oe_fd_hostfs_file_system fs;
-        test_all(fs, tmp_dir);
+        test_common(fs, tmp_dir);
     }
 
 #if defined(TEST_SGXFS)
@@ -659,7 +667,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         printf("=== testing oe-fd-sgxfs:\n");
 
         oe_fd_sgxfs_file_system fs;
-        test_all(fs, tmp_dir);
+        test_common(fs, tmp_dir);
     }
 #endif
 
@@ -668,7 +676,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         printf("=== testing fd-hostfs:\n");
 
         fd_hostfs_file_system fs;
-        test_all(fs, tmp_dir);
+        test_common(fs, tmp_dir);
     }
 
 #if defined(TEST_SGXFS)
@@ -677,7 +685,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         printf("=== testing fd-sgxfs:\n");
 
         fd_sgxfs_file_system fs;
-        test_all(fs, tmp_dir);
+        test_common(fs, tmp_dir);
     }
 #endif
 
@@ -686,7 +694,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         printf("=== testing stream I/O hostfs functions:\n");
 
         stream_hostfs_file_system fs;
-        test_all(fs, tmp_dir);
+        test_common(fs, tmp_dir);
     }
 
 #if defined(TEST_SGXFS)
@@ -695,7 +703,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         printf("=== testing stream I/O sgxfs functions:\n");
 
         stream_sgxfs_file_system fs;
-        test_all(fs, tmp_dir);
+        test_common(fs, tmp_dir);
     }
 #endif
 
@@ -705,7 +713,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 
         fd_file_system fs;
         device_registrant reg(OE_DEVID_HOST_FILE_SYSTEM);
-        test_all(fs, tmp_dir);
+        test_common(fs, tmp_dir);
     }
 
     /* Test reading from enclave relative path */
@@ -790,6 +798,84 @@ void test_fs(const char* src_dir, const char* tmp_dir)
     test_dup_case2(tmp_dir);
 }
 
+void test_fs_linux(const char* src_dir, const char* tmp_dir)
+{
+    (void)src_dir;
+
+    OE_TEST(oe_load_module_host_file_system() == OE_OK);
+#if defined(TEST_SGXFS)
+    OE_TEST(oe_load_module_sgx_file_system() == OE_OK);
+#endif
+
+    OE_TEST(oe_mkdir_d(OE_DEVID_HOST_FILE_SYSTEM, tmp_dir, 0777) == 0);
+
+    printf("=== running Linux-specific tests\n");
+    printf("--- src_dir=%s\n", src_dir);
+    printf("--- tmp_dir=%s\n", tmp_dir);
+
+    /* Test the HOSTFS oe file descriptor interfaces. */
+    {
+        printf("=== testing oe-fd-hostfs:\n");
+
+        oe_fd_hostfs_file_system fs;
+        test_pio(fs, tmp_dir);
+    }
+
+#if defined(TEST_SGXFS)
+    /* Test the SGXFS oe file descriptor interfaces. */
+    {
+        printf("=== testing oe-fd-sgxfs:\n");
+
+        oe_fd_sgxfs_file_system fs;
+        test_pio(fs, tmp_dir);
+    }
+#endif
+
+    /* Test the HOSTFS standard C descriptor interfaces. */
+    {
+        printf("=== testing fd-hostfs:\n");
+
+        fd_hostfs_file_system fs;
+        test_pio(fs, tmp_dir);
+    }
+
+#if defined(TEST_SGXFS)
+    /* Test the SGXFS standard C descriptor interfaces. */
+    {
+        printf("=== testing fd-sgxfs:\n");
+
+        fd_sgxfs_file_system fs;
+        test_pio(fs, tmp_dir);
+    }
+#endif
+
+    /* Test stream I/O hostfs functions. */
+    {
+        printf("=== testing stream I/O hostfs functions:\n");
+
+        stream_hostfs_file_system fs;
+        test_pio(fs, tmp_dir);
+    }
+
+#if defined(TEST_SGXFS)
+    /* Test stream I/O sgxfs functions. */
+    {
+        printf("=== testing stream I/O sgxfs functions:\n");
+
+        stream_sgxfs_file_system fs;
+        test_pio(fs, tmp_dir);
+    }
+#endif
+
+    /* Test oe_set_thread_devid() */
+    {
+        printf("=== testing oe_set_thread_devid:\n");
+
+        fd_file_system fs;
+        device_registrant reg(OE_DEVID_HOST_FILE_SYSTEM);
+        test_pio(fs, tmp_dir);
+    }
+}
 OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
     1,    /* SecurityVersion */

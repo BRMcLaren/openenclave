@@ -64,7 +64,12 @@ oe_result_t enclave_identity_verifier(oe_identity_t* identity, void* arg)
 
 static bool _validate_file(const char* filename, bool assert)
 {
-    FILE* fp = fopen(filename, "rb");
+    FILE* fp;
+#ifdef _WIN32
+    fopen_s(&fp, filename, "rb");
+#else
+    fp = fopen(filename, "rb");
+#endif
 
     if (assert)
         OE_TEST(fp != NULL);
@@ -84,8 +89,11 @@ static oe_result_t _verify_cert(const char* filename, bool pass)
     size_t bytes_read;
 
     OE_TRACE_INFO("\n\nLoading and verifying %s\n\n", filename);
-
+#ifdef _WIN32
+    fopen_s(&fp, filename, "rb");
+#else
     fp = fopen(filename, "rb");
+#endif
     OE_TEST(fp != NULL);
 
     bytes_read = fread(buf, sizeof(uint8_t), sizeof(buf), fp);
@@ -129,7 +137,12 @@ static void _read_binary_file(
     uint8_t** data_ptr,
     size_t* size_ptr)
 {
-    FILE* fp = fopen(filename, "rb");
+    FILE* fp;
+#ifdef _WIN32
+    fopen_s(&fp, filename, "rb");
+#else
+    fp = fopen(filename, "rb");
+#endif
     size_t size = 0;
     uint8_t* data = NULL;
 
@@ -197,6 +210,29 @@ static int _verify_report(
     {
         _read_binary_file(
             endorsements_filename, &endorsements_data, &endorsements_file_size);
+
+        result = oe_verify_remote_report(
+            report_data,
+            report_file_size,
+            endorsements_data,
+            endorsements_file_size,
+            NULL);
+        if (pass)
+            OE_TEST(result == OE_OK);
+        else
+        {
+            // Note: The failure result code is different between linux vs
+            // windows.
+            //
+            OE_TEST(result != OE_OK);
+            OE_TRACE_INFO(
+                "Report %s verification failed as expected. The generated "
+                "endorsement file is %s. Failure %d(%s)\n",
+                report_filename,
+                endorsements_filename,
+                result,
+                oe_result_str(result));
+        }
 
         result = oe_verify_sgx_quote(
             report_data,

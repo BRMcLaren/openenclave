@@ -26,6 +26,7 @@
 #include <openenclave/internal/syscall/dirent.h>
 #include <openenclave/internal/syscall/sys/mount.h>
 #include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
 #include <openenclave/internal/syscall/fcntl.h>
 #include <openenclave/internal/syscall/sys/ioctl.h>
@@ -1001,7 +1002,7 @@ done:
 static int _hostfs_stat(
     oe_device_t* device,
     const char* pathname,
-    struct oe_stat* buf)
+    struct oe_stat_t* buf)
 {
     int ret = -1;
     device_t* fs = _cast_device(device);

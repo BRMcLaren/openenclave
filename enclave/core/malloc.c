@@ -1,8 +1,15 @@
 // Copyright (c) Open Enclave SDK contributors.
 // Licensed under the MIT License.
 
+/* The use of dlmalloc/malloc.c below requires stdc names from these headers.
+ * OE_NEED_STDC_NAMES is set by enclave/core/CMakeLists.txt for this file
+ * to make the following corelibc headers include corresponding stdc names
+ * for types and functions. */
+#include <openenclave/corelibc/errno.h> // For errno & error defs
+#include <openenclave/corelibc/sched.h> // For sched_yield
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/string.h>
+
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fault.h>
 #include <openenclave/internal/globals.h>
@@ -13,12 +20,6 @@
 #include "debugmalloc.h"
 #include "oe_alloc_thread.h"
 #include "oe_nodebug_alloc.h"
-
-/* The use of dlmalloc/malloc.c below requires stdc names from these headers */
-#define OE_NEED_STDC_NAMES
-#include <openenclave/corelibc/bits/stdfile.h> // For stderr & FILE
-#include <openenclave/corelibc/errno.h>        // For errno & error defs
-#include <openenclave/corelibc/sched.h>        // For sched_yield
 
 #define HAVE_MMAP 0
 #define LACKS_UNISTD_H

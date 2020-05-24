@@ -34,6 +34,7 @@ static char* get_fullpath(const char* path)
 
 #include <assert.h>
 #include <openenclave/bits/defs.h>
+#include <openenclave/bits/sgx/sgxtypes.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/debugrt/host.h>
@@ -45,7 +46,6 @@ static char* get_fullpath(const char* path)
 #include <openenclave/internal/safecrt.h>
 #include <openenclave/internal/safemath.h>
 #include <openenclave/internal/sgxcreate.h>
-#include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/switchless.h>
 #include <openenclave/internal/trace.h>
 #include <openenclave/internal/utils.h>
@@ -54,7 +54,7 @@ static char* get_fullpath(const char* path)
 #include "cpuid.h"
 #include "enclave.h"
 #include "exception.h"
-#include "sgx_u.h"
+#include "platform_u.h"
 #include "sgxload.h"
 
 #if !defined(OEHOSTMR)
@@ -76,10 +76,12 @@ static void _initialize_exception_handling(void)
 static void _initialize_enclave_host()
 {
     oe_once(&_enclave_init_once, _initialize_exception_handling);
-    oe_register_switchless_ocall_function_table();
-    oe_register_tee_ocall_function_table();
-    oe_register_sgx_ocall_function_table();
+
+#ifdef OE_USE_BUILTIN_EDL
+    oe_register_core_ocall_function_table();
+    oe_register_platform_ocall_function_table();
     oe_register_syscall_ocall_function_table();
+#endif // OE_USE_BUILTIN_EDL
 }
 #endif // OEHOSTMR
 
@@ -221,7 +223,7 @@ static oe_result_t _add_control_pages(
         tcs->oentry = entry;
 
         /* FS segment: Used for thread-local variables.
-         * The reserved (unused) space in td_t is used for thread-local
+         * The reserved (unused) space in oe_sgx_td_t is used for thread-local
          * variables.
          * Since negative offsets are used with FS, FS must point to end of the
          * segment.
@@ -361,7 +363,7 @@ done:
 }
 
 #if !defined(OEHOSTMR)
-oe_result_t oe_get_cpuid_table_ocall(
+oe_result_t oe_sgx_get_cpuid_table_ocall(
     void* cpuid_table_buffer,
     size_t cpuid_table_buffer_size)
 {
@@ -454,13 +456,8 @@ static oe_result_t _configure_enclave(
                     settings[i]
                         .u.context_switchless_setting->max_enclave_workers;
 
-                // Switchless ecalls are not enabled yet. Make sure the max
-                // number of enclave workers is always 0.
-                if (max_enclave_workers != 0)
-                    OE_RAISE(OE_INVALID_PARAMETER);
-
-                OE_CHECK(
-                    oe_start_switchless_manager(enclave, max_host_workers));
+                OE_CHECK(oe_start_switchless_manager(
+                    enclave, max_host_workers, max_enclave_workers));
                 break;
             }
             default:
@@ -542,19 +539,19 @@ oe_result_t oe_sgx_validate_enclave_properties(
         if (field_name)
             *field_name = "config.product_id";
         OE_TRACE_ERROR(
-            "oe_sgx_is_valid_product_id failed: num_tcs = %x\n",
+            "oe_sgx_is_valid_product_id failed: product_id = %x\n",
             properties->config.product_id);
         result = OE_FAILURE;
         goto done;
     }
 
-    if (!oe_sgx_is_valid_security_version(properties->config.product_id))
+    if (!oe_sgx_is_valid_security_version(properties->config.security_version))
     {
         if (field_name)
             *field_name = "config.security_version";
         OE_TRACE_ERROR(
             "oe_sgx_is_valid_security_version failed: security_version = %x\n",
-            properties->config.product_id);
+            properties->config.security_version);
         result = OE_FAILURE;
         goto done;
     }
@@ -757,7 +754,6 @@ oe_result_t oe_create_enclave(
         OE_RAISE(OE_OUT_OF_MEMORY);
 
 #if defined(_WIN32)
-
     /* Create Windows events for each TCS binding. Enclaves use
      * this event when calling into the host to handle waits/wakes
      * as part of the enclave mutex and condition variable
@@ -864,6 +860,9 @@ oe_result_t oe_terminate_enclave(oe_enclave_t* enclave)
     if (!enclave || enclave->magic != ENCLAVE_MAGIC)
         OE_RAISE(OE_INVALID_PARAMETER);
 
+    /* Shut down the switchless manager */
+    OE_CHECK(oe_stop_switchless_manager(enclave));
+
     /* Call the enclave destructor */
     OE_CHECK(oe_ecall(enclave, OE_ECALL_DESTRUCTOR, 0, NULL));
 
@@ -879,9 +878,6 @@ oe_result_t oe_terminate_enclave(oe_enclave_t* enclave)
 
     /* Remove this enclave from the global list. */
     oe_remove_enclave_instance(enclave);
-
-    /* Shut down the switchless manager */
-    OE_CHECK(oe_stop_switchless_manager(enclave));
 
     /* Clear the magic number */
     enclave->magic = 0;

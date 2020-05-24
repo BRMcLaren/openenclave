@@ -12,8 +12,8 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/safecrt.h>
 #include "../oe_nodebug_alloc.h"
-#include "sgx_t.h"
-#include "tee_t.h"
+#include "core_t.h"
+#include "platform_t.h"
 
 #if defined(__INTEL_COMPILER)
 #error "optimized __builtin_return_address() not supported by Intel compiler"
@@ -112,7 +112,7 @@ char** oe_backtrace_symbols_impl(
         goto done;
 
     /* First call might return OE_BUFFER_TOO_SMALL. */
-    if (oe_backtrace_symbols_ocall(
+    if (oe_sgx_backtrace_symbols_ocall(
             &retval,
             oe_get_enclave(),
             (const uint64_t*)buffer,
@@ -132,7 +132,7 @@ char** oe_backtrace_symbols_impl(
                   realloc_fcn(symbols_buffer, symbols_buffer_size)))
             goto done;
 
-        if (oe_backtrace_symbols_ocall(
+        if (oe_sgx_backtrace_symbols_ocall(
                 &retval,
                 oe_get_enclave(),
                 (const uint64_t*)buffer,
