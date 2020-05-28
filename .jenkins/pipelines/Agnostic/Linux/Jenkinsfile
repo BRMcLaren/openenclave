@@ -14,12 +14,37 @@ AGENTS_LABELS = [
 ]
 
 
+
+def checkoutSCM(int max_retries = 10, int retry_timeout = 30) {
+    exec_with_retry(10,300){
+        checkout scm
+    }
+}
+
+def exec_with_retry(int max_retries = 10, int retry_timeout = 30, Closure body) {
+    int retry_count = 1
+    while (retry_count <= max_retries) {
+        try {
+            body.call()
+            break
+        } catch (Exception e) {
+            if (retry_count == max_retries) {
+                throw e
+            }
+            println("Command failed. Retry count ${retry_count}/${max_retries}. Retrying in ${retry_timeout} seconds")
+            sleep(retry_timeout)
+            retry_count += 1
+            continue
+        }
+    }
+}
+
 def simulationContainerTest(String version, String build_type, List extra_cmake_args = []) {
     stage("Simulation Ubuntu ${version} clang-7 ${build_type}, extra_cmake_args: ${extra_cmake_args}") {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                oe.checkoutSCM(10,30)
+                checkoutSCM()
                 def task = """
                            cmake ${WORKSPACE}                                           \
                                -G Ninja                                                 \
@@ -43,7 +68,7 @@ def AArch64GNUTest(String version, String build_type) {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                oe.checkoutSCM(10,30)
+                checkoutSCM()
                 def task = """
                             cmake ${WORKSPACE}                                                     \
                                 -G Ninja                                                           \
@@ -65,7 +90,7 @@ def checkDevFlows(String version) {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                oe.checkoutSCM(10,30)
+                checkoutSCM()
                 def task = """
                            cmake ${WORKSPACE} -G Ninja -DHAS_QUOTE_PROVIDER=OFF -Wdev --warn-uninitialized -Werror=dev
                            ninja -v
@@ -81,7 +106,7 @@ def checkCI() {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                oe.checkoutSCM(10,30)
+                checkoutSCM()
                 // At the moment, the check-ci script assumes that it's executed from the
                 // root source code directory.
                 oe.ContainerRun("oetools-minimal-18.04:${DOCKER_TAG}", "clang-7", "cd ${WORKSPACE} && ./scripts/check-ci", "--cap-add=SYS_PTRACE")
