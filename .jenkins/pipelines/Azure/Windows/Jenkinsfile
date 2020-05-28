@@ -22,7 +22,7 @@ def windowsLinuxElfBuild(String label, String version, String compiler, String b
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkoutSCM(10,30)
                 def task = """
                            cmake ${WORKSPACE}                                           \
                                -G Ninja                                                 \
@@ -43,7 +43,7 @@ def windowsLinuxElfBuild(String label, String version, String compiler, String b
         node(AGENTS_LABELS[label]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkoutSCM(10,30)
                 unstash "linux-${label}-${compiler}-${build_type}-lvi_mitigation=${lvi_mitigation}-${version}-${BUILD_NUMBER}"
                 bat 'move build linuxbin'
                 dir('build') {

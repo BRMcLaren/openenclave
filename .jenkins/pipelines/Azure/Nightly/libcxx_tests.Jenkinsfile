@@ -16,7 +16,7 @@ def ACCLibcxxTest(String label, String compiler, String build_type) {
         node(label) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkout_scm_retry(10,30)
                 def task = """
                            cmake .. -DCMAKE_BUILD_TYPE=${build_type} -DHAS_QUOTE_PROVIDER=ON -DENABLE_FULL_LIBCXX_TESTS=ON
                            make

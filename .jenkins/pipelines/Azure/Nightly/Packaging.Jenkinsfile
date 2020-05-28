@@ -14,7 +14,7 @@ def LinuxPackaging(String version, String build_type, String lvi_mitigation = 'N
         node("ACC-${version}") {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkout_scm_retry(10,30)
                 def task = """
                            cmake ${WORKSPACE}                               \
                              -DCMAKE_BUILD_TYPE=${build_type}               \

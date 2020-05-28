@@ -19,7 +19,7 @@ def simulationContainerTest(String version, String build_type, List extra_cmake_
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkoutSCM(10,30)
                 def task = """
                            cmake ${WORKSPACE}                                           \
                                -G Ninja                                                 \
@@ -43,7 +43,7 @@ def AArch64GNUTest(String version, String build_type) {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkoutSCM(10,30)
                 def task = """
                             cmake ${WORKSPACE}                                                     \
                                 -G Ninja                                                           \
@@ -65,7 +65,7 @@ def checkDevFlows(String version) {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkoutSCM(10,30)
                 def task = """
                            cmake ${WORKSPACE} -G Ninja -DHAS_QUOTE_PROVIDER=OFF -Wdev --warn-uninitialized -Werror=dev
                            ninja -v
@@ -81,7 +81,7 @@ def checkCI() {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkout scm
+                oe.checkoutSCM(10,30)
                 // At the moment, the check-ci script assumes that it's executed from the
                 // root source code directory.
                 oe.ContainerRun("oetools-minimal-18.04:${DOCKER_TAG}", "clang-7", "cd ${WORKSPACE} && ./scripts/check-ci", "--cap-add=SYS_PTRACE")
