@@ -48,7 +48,7 @@ def ACCTest(String label, String compiler, String build_type, List extra_cmake_a
         node(label) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 def task = """
                            cmake ${WORKSPACE}                                           \
                                -G Ninja                                                 \
@@ -72,7 +72,7 @@ def ACCGNUTest() {
         node(AGENTS_LABELS["acc-ubuntu-18.04"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 def task = """
                            cmake ${WORKSPACE} -DHAS_QUOTE_PROVIDER=ON
                            make
@@ -89,7 +89,7 @@ def ACCContainerTest(String label, String version, List extra_cmake_args = []) {
         node("${label}") {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 def task = """
                            cmake ${WORKSPACE}                                           \
                                -G Ninja                                                 \
@@ -111,7 +111,7 @@ def ACCPackageTest(String label, String version, List extra_cmake_args = []) {
         node("${label}") {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 def task = """
                            cmake ${WORKSPACE}                                         \
                              -G Ninja                                                 \
@@ -153,7 +153,7 @@ def ACCHostVerificationTest(String version, String build_type) {
         node(AGENTS_LABELS["acc-ubuntu-18.04"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
 
                 println("Generating certificates and reports ...")
                 def task = """
@@ -200,7 +200,7 @@ def ACCHostVerificationTest(String version, String build_type) {
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 unstash "linux_host_verify-${version}-${build_type}-${BUILD_NUMBER}"
                 def task = """
                            cmake ${WORKSPACE} -G Ninja -DBUILD_ENCLAVES=OFF -DHAS_QUOTE_PROVIDER=OFF -DCMAKE_BUILD_TYPE=${build_type} -Wdev
@@ -218,7 +218,7 @@ def ACCHostVerificationTest(String version, String build_type) {
         node(AGENTS_LABELS["windows-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 unstash "linux_host_verify-${version}-${build_type}-${BUILD_NUMBER}"
                 dir('build') {
                     bat """

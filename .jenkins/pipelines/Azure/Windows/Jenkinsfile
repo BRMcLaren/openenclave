@@ -19,7 +19,7 @@ AGENTS_LABELS = [
 
 
 
-def checkoutSCM(int max_retries = 10, int retry_timeout = 30) {
+def checkoutSCM(int max_retries = 10, int retry_timeout = 30, Closure body) {
     exec_with_retry(10,300) {
         checkout scm
     }
@@ -48,7 +48,7 @@ def windowsLinuxElfBuild(String label, String version, String compiler, String b
         node(AGENTS_LABELS["ubuntu-nonsgx"]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 def task = """
                            cmake ${WORKSPACE}                                           \
                                -G Ninja                                                 \
@@ -69,7 +69,7 @@ def windowsLinuxElfBuild(String label, String version, String compiler, String b
         node(AGENTS_LABELS[label]) {
             timeout(GLOBAL_TIMEOUT_MINUTES) {
                 cleanWs()
-                checkoutSCM()
+                oe.checkoutSCM()
                 unstash "linux-${label}-${compiler}-${build_type}-lvi_mitigation=${lvi_mitigation}-${version}-${BUILD_NUMBER}"
                 bat 'move build linuxbin'
                 dir('build') {
