@@ -14,8 +14,8 @@ Param(
     [string]$VSBuildToolsHash = '',
     [string]$Clang7URL = 'http://releases.llvm.org/7.0.1/LLVM-7.0.1-win64.exe',
     [string]$Clang7Hash = '672E4C420D6543A8A9F8EC5F1E5F283D88AC2155EF4C57232A399160A02BFF57',
-    [string]$IntelPSWURL = 'http://registrationcenter-download.intel.com/akdlm/irc_nas/16607/Intel%20SGX%20PSW%20for%20Windows%20v2.7.101.2.exe',
-    [string]$IntelPSWHash = 'AF669A4593411E9AABCE18838C91003866DDDEDAC5BEEC61DE160025008B0A19',
+    [string]$IntelPSWURL = 'http://download.windowsupdate.com/c/msdownload/update/driver/drvs/2020/05/48e7c1e9-6de8-46ee-8ff9-46aa7b7ee5b9_ab5277f79b04b450e6e7c3a624d99c1b1722e6f2.cab',
+    [string]$IntelPSWHash = '930CD99AE97262E72C0962892D7DC8A740DD5B8FD8A9568B8DD935155568CE36',
     [string]$ShellCheckURL = 'https://shellcheck.storage.googleapis.com/shellcheck-v0.7.0.zip',
     [string]$ShellCheckHash = '02CFA14220C8154BB7C97909E80E74D3A7FE2CBB7D80AC32ADCAC7988A95E387',
     [string]$NugetURL = 'https://www.nuget.org/api/v2/package/NuGet.exe/3.4.3',
@@ -401,26 +401,12 @@ function Install-7Zip {
 }
 
 function Install-PSW {
-    $tempInstallDir = "$PACKAGES_DIRECTORY\Intel_SGX_PSW"
-    if(Test-Path $tempInstallDir) {
-        Remove-Item -Recurse -Force $tempInstallDir
-    }
-    Install-ZipTool -ZipPath $PACKAGES["psw"]["local_file"] `
-                    -InstallDirectory $tempInstallDir
+    curl.exe -O http://download.windowsupdate.com/c/msdownload/update/driver/drvs/2019/07/e051e8d3-46e8-4fe7-968c-415acebaf18d_5b0def687a250297e5b799e1808fc6ce501a393f.cab
+    expand.exe /R e051e8d3-46e8-4fe7-968c-415acebaf18d_5b0def687a250297e5b799e1808fc6ce501a393f.cab /F:sgx_urts.dll c:\windows\system32 \
+    expand /R e051e8d3-46e8-4fe7-968c-415acebaf18d_5b0def687a250297e5b799e1808fc6ce501a393f.cab /F:sgx_enclave_common.dll c:\Windows\System32 \
+    expand /R e051e8d3-46e8-4fe7-968c-415acebaf18d_5b0def687a250297e5b799e1808fc6ce501a393f.cab% /F:sgx_uae_service.dll c:\Windows\System32 \
+    expand /R e051e8d3-46e8-4fe7-968c-415acebaf18d_5b0def687a250297e5b799e1808fc6ce501a393f.cab /F:third_party.rtf c:/ \
 
-    $installer = Get-Item "$tempInstallDir\Intel*SGX*\PSW_EXE*\Intel(R)_SGX_Windows_x64_PSW_*.exe"
-    if(!$installer) {
-        Throw "Cannot find the installer executable"
-    }
-    if($installer.Count -gt 1) {
-        Throw "Multiple installer executables found"
-    }
-    $unattendedParams = @('--s', '--a', 'install', "--output=$tempInstallDir\psw-installer.log", '--eula=accept', '--no-progress')
-    $p = Start-Process -Wait -NoNewWindow -FilePath $installer -ArgumentList $unattendedParams -PassThru
-    if($p.ExitCode -ne 0) {
-        Get-Content "$tempInstallDir\psw-installer.log"
-        Throw "Failed to install Intel PSW"
-    }
 
     Start-ExecuteWithRetry -ScriptBlock {
         Start-Service "AESMService" -ErrorAction Stop
@@ -519,6 +505,7 @@ function Remove-DCAPDriver {
 
 
 function Install-DCAP-Dependencies {
+
     Install-Tool -InstallerPath $PACKAGES["dcap"]["local_file"] `
                  -ArgumentList @('/auto', "$PACKAGES_DIRECTORY\Intel_SGX_DCAP")
 
@@ -526,31 +513,7 @@ function Install-DCAP-Dependencies {
     if (($LaunchConfiguration -eq "SGX1FLC") -or ($LaunchConfiguration -eq "SGX1FLC-NoDriver") -or ($DCAPClientType -eq "Azure"))
     {
         $drivers = @{
-            'WinServer2016' = @{
-                'sgx_base_dev' = @{
-                    'zip_path'    = "$PACKAGES_DIRECTORY\Intel_SGX_DCAP\Intel SGX DCAP for Windows *\LC_driver_${OS_VERSION}\Signed_*.zip"
-                    'location'    = 'root\SgxLCDevice'
-                    'description' = 'Intel(R) Software Guard Extensions Launch Configuration Service'
-                }
-                'sgx_dcap_dev' = @{
-                    'zip_path'    = "$PACKAGES_DIRECTORY\Intel_SGX_DCAP\Intel SGX DCAP for Windows *\DCAP_INF\${OS_VERSION}\Signed_*.zip"
-                    'location'    = 'root\SgxLCDevice_DCAP'
-                    'description' = 'Intel(R) Software Guard Extensions DCAP Components Device'
-                }
-            }
             'WinServer2019' = @{
-                'sgx_base' = @{
-                    'zip_path'    = "$PACKAGES_DIRECTORY\Intel_SGX_DCAP\Intel SGX DCAP for Windows *\LC_driver_${OS_VERSION}\Signed_*.zip"
-                    'location'    = 'root\SgxLCDevice'
-                    'description' = 'Intel(R) Software Guard Extensions Launch Configuration Service'
-                }
-                'sgx_dcap' = @{
-                    'zip_path'    = "$PACKAGES_DIRECTORY\Intel_SGX_DCAP\Intel SGX DCAP for Windows *\DCAP_INF\${OS_VERSION}\Signed_*.zip"
-                    'location'    = 'root\SgxLCDevice_DCAP'
-                    'description' = 'Intel(R) Software Guard Extensions DCAP Components Device'
-                }
-            }
-            'Win10' = @{
                 'sgx_base' = @{
                     'zip_path'    = "$PACKAGES_DIRECTORY\Intel_SGX_DCAP\Intel SGX DCAP for Windows *\LC_driver_${OS_VERSION}\Signed_*.zip"
                     'location'    = 'root\SgxLCDevice'
@@ -605,8 +568,15 @@ function Install-DCAP-Dependencies {
             }
             elseif (($LaunchConfiguration -eq "SGX1FLC-NoDriver") -and (${OS_VERSION} -eq "WinServer2016"))
             {
-                 Write-Output "Copying Intel_SGX_DCAP dll files into $($env:SystemRoot)\system32"
-                 Copy-item -Path $PACKAGES_DIRECTORY\Intel_SGX_DCAP\$driver\drivers\*\*.dll $env:SystemRoot\system32\
+                curl.exe -O http://download.windowsupdate.com/c/msdownload/update/driver/drvs/2019/07/3ed5a7ee-5db6-444b-a40f-b8ba5edac4d7_0ec417b46ef98ced80fb5e86f86a8417811211c8.cab \
+                expand /R 3ed5a7ee-5db6-444b-a40f-b8ba5edac4d7_0ec417b46ef98ced80fb5e86f86a8417811211c8.cab /F:sgx_dcap_ql.dll c:\Windows\System32 \
+                expand /R 3ed5a7ee-5db6-444b-a40f-b8ba5edac4d7_0ec417b46ef98ced80fb5e86f86a8417811211c8.cab /F:pce.signed.dll c:\Windows\System32 \
+                expand /R 3ed5a7ee-5db6-444b-a40f-b8ba5edac4d7_0ec417b46ef98ced80fb5e86f86a8417811211c8.cab /F:qe3.signed.dll c:\Windows\System32 \
+                expand /R 3ed5a7ee-5db6-444b-a40f-b8ba5edac4d7_0ec417b46ef98ced80fb5e86f86a8417811211c8.cab /F:License.txt c:/ \
+                expand /R 3ed5a7ee-5db6-444b-a40f-b8ba5edac4d7_0ec417b46ef98ced80fb5e86f86a8417811211c8.cab /F:ThirdPartyLicenses.txt c:/ \
+
+                Write-Output "Copying Intel_SGX_DCAP dll files into $($env:SystemRoot)\system32"
+                Copy-item -Path $PACKAGES_DIRECTORY\Intel_SGX_DCAP\$driver\drivers\*\*.dll $env:SystemRoot\system32\
             }
         }
     }

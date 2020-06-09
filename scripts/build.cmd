@@ -1,0 +1,1 @@
+git clone https://github.com/openenclave/openenclave.git && cd openenclave && git submodule update --recursive --init && mkdir out && cd out && vcvars64.bat && cd && cmake .. -G Ninja -DNUGET_PACKAGE_PATH=C:\Downloads\prereqs\nuget -DCPACK_GENERATOR=NuGet -DCMAKE_BUILD_TYPE=Release -DBUILD_ENCLAVES=ON -DLVI_MITIGATION=ControlFlow -DHAS_QUOTE_PROVIDER=ON && ninja -j 1 -v && cpack
