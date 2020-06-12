@@ -12,6 +12,9 @@
 #include "key.h"
 #include "pem.h"
 
+#include <openenclave/internal/hexdump.h>
+#include <stdio.h>
+
 /* can't use an engine with bcrypt */
 oe_result_t oe_private_key_from_engine(
     const char* engine_id,
@@ -577,15 +580,44 @@ oe_result_t oe_public_key_verify(
 
     if (!BCRYPT_SUCCESS(status))
     {
+        printf("\n ~~~~ BCryptVerifySignature Args: ~~~~\n");
+        if (public_key)
+            printf(
+                "public_key: magic=%#llx, handle=%#llx\n",
+                public_key->magic,
+                (uint64_t)public_key->handle);
+        else
+            printf("public_key: NULL\n");
+        printf("key_magic: %#llx\n", key_magic);
+        if (padding_info)
+            printf(
+                "padding_info: type=%d, config=%#llx\n",
+                padding_info->type,
+                (uint64_t)padding_info->config);
+        else
+            printf("padding_info: NULL\n");
+        printf("hash_size: %llu, hash_data:\n", hash_size);
+        oe_hex_dump(hash_data, hash_size);
+        printf("signature_size: %llu, signature_data:\n", signature_size);
+        oe_hex_dump(signature, signature_size);
+        printf(" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
         if (status == STATUS_INVALID_SIGNATURE)
             OE_RAISE(OE_VERIFY_FAILED);
+        else if (status == STATUS_INVALID_PARAMETER)
+        {
+            printf("\n!!! STATUS_INVALID_PARAMETER FOUND !!!\n");
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR,
+                "BCryptVerifySignature failed (err=%#x)\n",
+                status);
+        }
         else
             OE_RAISE_MSG(
                 OE_CRYPTO_ERROR,
                 "BCryptVerifySignature failed (err=%#x)\n",
                 status);
     }
-
     result = OE_OK;
 
 done:
