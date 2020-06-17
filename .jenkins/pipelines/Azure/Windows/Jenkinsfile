@@ -68,10 +68,10 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
     stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation}") {
         node(node_label) {
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
-                powershell  """
-                        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-                        scripts/install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs -LaunchConfiguration "SGX1FLC" -DCAPClientType ${has_quote_provider == "OFF" ? "None" : "Azure"}
-                        """
+                bat  """
+                       "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden -File C:\install.ps1 -InstallPath C:\Downloads\prereqs\nuget -LaunchConfiguration SGX1FLC-NoDriver -DCAPClientType Azure"%1"
+                        exit /B %ERRORLEVEL%
+                """
                 timeout(GLOBAL_TIMEOUT_MINUTES) {
                     oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
                 }
