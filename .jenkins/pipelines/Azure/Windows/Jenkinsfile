@@ -66,12 +66,11 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
     }
 
     stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation}") {
-        node('acc-win2016-vanilla') {
+        node('vanilla-win2016') {
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 cleanWs()
                 checkout scm
-                bat  """
-                        dir
+                bat """
                        "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden -File scripts\\install-windows-prereqs.ps1 -InstallPath C:\\oeprereqs -LaunchConfiguration SGX1FLC-NoDriver -DCAPClientType Azure"%1"
                         exit /B %ERRORLEVEL%
                     """
