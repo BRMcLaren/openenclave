@@ -73,6 +73,7 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
                 bat """
                        "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden -File scripts\\install-windows-prereqs.ps1 -InstallPath C:\\oeprereqs -LaunchConfiguration SGX1FLC-NoDriver -DCAPClientType Azure"%1"
                         exit /B %ERRORLEVEL%
+                        PATH = "C:\\WINDOWS\\SYSTEM32"
                     """
                 timeout(GLOBAL_TIMEOUT_MINUTES) {
                     oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
