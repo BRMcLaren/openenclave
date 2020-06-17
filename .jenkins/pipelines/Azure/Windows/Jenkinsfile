@@ -75,7 +75,7 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
                     """
 
                 bat """
-                    vcvars64.bat x64 && \
+                    vcvars64.bat && \
                     cmake.exe ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=${build_type} -DBUILD_ENCLAVES=ON -DHAS_QUOTE_PROVIDER=${has_quote_provider} -DLVI_MITIGATION=${lvi_mitigation} -DLVI_MITIGATION_SKIP_TESTS=${lvi_mitigation_skip_tests} -DNUGET_PACKAGE_PATH=C:/oe_prereqs -DCPACK_GENERATOR=NuGet -Wdev && \
                     ninja.exe && \
                     ctest.exe -V -C ${build_type} --timeout ${CTEST_TIMEOUT_SECONDS} && \
