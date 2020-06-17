@@ -76,9 +76,9 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
 
                 bat """
                     vcvars64.bat x64 && \
-                    cmake.exe ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=${buildType} -DBUILD_ENCLAVES=ON -DHAS_QUOTE_PROVIDER=${hasQuoteProvider} -DLVI_MITIGATION=${lviMitigation} -DLVI_MITIGATION_SKIP_TESTS=${lviMitigationSkipTests} -DNUGET_PACKAGE_PATH=C:/oe_prereqs -DCPACK_GENERATOR=NuGet -Wdev && \
+                    cmake.exe ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=${build_type} -DBUILD_ENCLAVES=ON -DHAS_QUOTE_PROVIDER=${has_quote_provider} -DLVI_MITIGATION=${lvi_mitigation} -DLVI_MITIGATION_SKIP_TESTS=${lvi_mitigation_skip_tests} -DNUGET_PACKAGE_PATH=C:/oe_prereqs -DCPACK_GENERATOR=NuGet -Wdev && \
                     ninja.exe && \
-                    ctest.exe -V -C ${buildType} --timeout ${timeoutSeconds} && \
+                    ctest.exe -V -C ${build_type} --timeout ${CTEST_TIMEOUT_SECONDS} && \
                     cpack.exe -D CPACK_NUGET_COMPONENT_INSTALL=ON -DCPACK_COMPONENTS_ALL=OEHOSTVERIFY && \
                     cpack.exe && \
                     (if exist C:\\oe rmdir /s/q C:\\oe) && \
@@ -90,15 +90,11 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
                         cd C:\\oe\\open-enclave\\openenclave\\share\\openenclave\\samples\\"%%i"
                         mkdir build
                         cd build
-                        cmake .. -G Ninja -DNUGET_PACKAGE_PATH=C:\\oe_prereqs -DLVI_MITIGATION=${lviMitigation} || exit /b %errorlevel%
+                        cmake .. -G Ninja -DNUGET_PACKAGE_PATH=C:\\oe_prereqs -DLVI_MITIGATION=${lvi_mitigation} || exit /b %errorlevel%
                         ninja || exit /b %errorlevel%
                         ninja run || exit /b %errorlevel%
                     )
                     """
-                
-                timeout(GLOBAL_TIMEOUT_MINUTES) {
-                    oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
-                }
             }
         }
     }
