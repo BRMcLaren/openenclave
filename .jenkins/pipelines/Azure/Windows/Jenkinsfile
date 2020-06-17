@@ -66,7 +66,7 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
     }
 
     stage("Windows ${label} ${build_type} with SGX ${has_quote_provider} LVI_MITIGATION=${lvi_mitigation}") {
-        node(node_label) {
+        node('acc-win2016-vanilla') {
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 cleanWs()
                 checkout scm
