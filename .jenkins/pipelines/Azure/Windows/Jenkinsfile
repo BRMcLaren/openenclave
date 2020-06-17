@@ -69,7 +69,8 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
         node(node_label) {
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 powershell  """
-                        scripts/install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs -LaunchConfiguration ${lvi_mitigation == "None" ? "SGX1FLC-NoDriver" : "SGX1FLC"} -DCAPClientType ${has_quote_provider == "OFF" ? "None" : "Azure"}
+                        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+                        scripts/install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs -LaunchConfiguration "SGX1FLC" -DCAPClientType ${has_quote_provider == "OFF" ? "None" : "Azure"}
                         """
                 timeout(GLOBAL_TIMEOUT_MINUTES) {
                     oe.WinCompilePackageTest("build/X64-${build_type}", build_type, has_quote_provider, CTEST_TIMEOUT_SECONDS, lvi_mitigation, lvi_mitigation_skip_tests)
