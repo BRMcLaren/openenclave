@@ -69,7 +69,7 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
         node(node_label) {
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 bat  """
-                       "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden -File C:\install.ps1 -InstallPath C:\Downloads\prereqs\nuget -LaunchConfiguration SGX1FLC-NoDriver -DCAPClientType Azure"%1"
+                       "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden -File C:\\install.ps1 -InstallPath C:\\oeprereqs-LaunchConfiguration SGX1FLC-NoDriver -DCAPClientType Azure"%1"
                         exit /B %ERRORLEVEL%
                 """
                 timeout(GLOBAL_TIMEOUT_MINUTES) {
