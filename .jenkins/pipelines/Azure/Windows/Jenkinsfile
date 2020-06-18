@@ -70,8 +70,13 @@ def windowsCrossCompile(String label, String build_type, String has_quote_provid
             withEnv(["OE_SIMULATION=${OE_SIMULATION}"]) {
                 cleanWs()
                 checkout scm
-                bat """
-                       "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden -File scripts\\install-windows-prereqs.ps1 -InstallPath C:\\oeprereqs -LaunchConfiguration SGX1FLC-NoDriver -DCAPClientType Azure"%1"
+                powershell  """
+                    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+                    Set-ExecutionPolicy RemoteSigned -Scope Process -Force
+                    Set-ExecutionPolicy RemoteSigned -Scope UserPolicy -Force
+                    Set-ExecutionPolicy RemoteSigned -Scope MachinePolicy -Force
+                    Get-ExecutionPolicy -List
+                    scripts/install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs -LaunchConfiguration ${lvi_mitigation == "None" ? "SGX1FLC-NoDriver" : "SGX1FLC"} -DCAPClientType ${has_quote_provider == "OFF" ? "None" : "Azure"}
                     """
 
                 bat """
