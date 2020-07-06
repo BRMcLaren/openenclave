@@ -106,9 +106,10 @@ def ACCContainerTest(String label, String version, List extra_cmake_args = []) {
                                ${extra_cmake_args.join(' ')}                            \
                                -Wdev
                            ninja -v
-                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS}
+                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS} > ctest.log
                            """
                 oe.ContainerRun("oetools-full-${version}:${DOCKER_TAG}", "clang-7", task, "--cap-add=SYS_PTRACE --device /dev/sgx:/dev/sgx")
+                azureUpload(storageCredentialId: 'sophiestore', filesPath: '**/*.log', storageType: 'blobstorage', virtualPath: "SomethingReallyObvious/", containerName: 'oejenkins')
             }
         }
     }
