@@ -33,59 +33,19 @@ def ACCTest(String label, String compiler, String build_type, List extra_cmake_a
                         """
                 }
                 def task = """
-                           cmake ${WORKSPACE}                               \
-                             -DCMAKE_BUILD_TYPE=${build_type}               \
-                             -DCMAKE_INSTALL_PREFIX:PATH='/opt/openenclave' \
-                             -DCPACK_GENERATOR=DEB                          \
-                             -DLVI_MITIGATION=${lvi_mitigation}             \
-                             -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin
-                           make
-                           ctest > ctest.log 
+                            cmake ${WORKSPACE}                                           \
+                               -G Ninja                                                 \
+                               -DCMAKE_BUILD_TYPE=${build_type}                         \
+                               -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin    \
+                               ${extra_cmake_args.join(' ')}                            \
+                               -Wdev
+                           ninja -v
+                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS}> ctest.log 
                            """
                 withEnv(test_env) {
                     oe.Run(compiler, task)
                     azureUpload(storageCredentialId: 'sophiestore', filesPath: '**/*.log', storageType: 'blobstorage', virtualPath: "SomethingReallyObvious/", containerName: 'oejenkins')
                 }
-            }
-        }
-    }
-}
-
-def LinuxPackaging(String version, String build_type, String lvi_mitigation = 'None') {
-    stage("Ubuntu${version} SGX1FLC Package ${build_type} LVI_MITIGATION=${lvi_mitigation}") {
-        node("ACC-${version}") {
-            timeout(GLOBAL_TIMEOUT_MINUTES) {
-                cleanWs()
-                checkout scm
-                def task = """
-                           cmake ${WORKSPACE}                               \
-                             -DCMAKE_BUILD_TYPE=${build_type}               \
-                             -DCMAKE_INSTALL_PREFIX:PATH='/opt/openenclave' \
-                             -DCPACK_GENERATOR=DEB                          \
-                             -DLVI_MITIGATION=${lvi_mitigation}             \
-                             -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin
-                           make
-                           ctest > ctest.log 
-                           """
-                oe.Run("clang-7", task)
-                sh '''
-                    echo "Mondays are hard, where am I?"
-                '''
-                azureUpload(storageCredentialId: 'sophiestore', filesPath: '**/*.log', storageType: 'blobstorage', virtualPath: "${BRANCH_NAME}/${BUILD_NUMBER}/ubuntu/${version}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
-                azureUpload(storageCredentialId: 'sophiestore', filesPath: '**/**/*.log', storageType: 'blobstorage', virtualPath: "${BRANCH_NAME}/${BUILD_NUMBER}/ubuntu/${version}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
-                azureUpload(storageCredentialId: 'sophiestore', filesPath: '**/*.log', storageType: 'blobstorage', virtualPath: "${BRANCH_NAME}/latest/ubuntu/${version}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
-            }
-        }
-    }
-}
-
-def WindowsPackaging(String version, String build_type, String lvi_mitigation = 'None') {
-    stage("Windows SGX1FLC ${build_type} LVI_MITIGATION=${lvi_mitigation}") {
-        node("SGXFLC-Windows-${version}-DCAP") {
-            timeout(GLOBAL_TIMEOUT_MINUTES) {
-                oe.WinCompilePackageTest("build", build_type, "ON", CTEST_TIMEOUT_SECONDS, lvi_mitigation)
-                azureUpload(storageCredentialId: 'sophiestore', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "${BRANCH_NAME}/${BUILD_NUMBER}/windows/${version}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
-                azureUpload(storageCredentialId: 'sophiestore', filesPath: 'build/*.nupkg', storageType: 'blobstorage', virtualPath: "${BRANCH_NAME}/latest/windows/${version}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
             }
         }
     }
