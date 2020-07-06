@@ -110,6 +110,29 @@ def ACCGNUTest() {
 }
 
 
+def ACCContainerTest(String label, String version, List extra_cmake_args = []) {
+    stage("${label} Container ${version} RelWithDebInfo, extra_cmake_args: ${extra_cmake_args}") {
+        node("${label}") {
+            timeout(GLOBAL_TIMEOUT_MINUTES) {
+                cleanWs()
+                checkout scm
+                def task = """
+                           cmake ${WORKSPACE}                                           \
+                               -G Ninja                                                 \
+                               -DCMAKE_BUILD_TYPE=RelWithDebInfo                        \
+                               -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin    \
+                               ${extra_cmake_args.join(' ')}                            \
+                               -Wdev
+                           ninja -v
+                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS} > ctest.log
+                           """
+                oe.ContainerRun("oetools-full-${version}:${DOCKER_TAG}", "clang-7", task, "--cap-add=SYS_PTRACE --device /dev/sgx:/dev/sgx")
+                azureUpload(storageCredentialId: 'sophiestore', filesPath: '**/*.log', storageType: 'blobstorage', virtualPath: "SomethingReallyObvious/container", containerName: 'oejenkins')
+            }
+        }
+    }
+}
+
 def ACCPackageTest(String label, String version, List extra_cmake_args = []) {
     stage("${label} PackageTest ${version} RelWithDebInfo, extra_cmake_args: ${extra_cmake_args}") {
         node("${label}") {
@@ -236,30 +259,6 @@ def ACCHostVerificationTest(String version, String build_type) {
         }
     }
 }
-
-def ACCContainerTest(String label, String version, List extra_cmake_args = []) {
-    stage("${label} Container ${version} RelWithDebInfo, extra_cmake_args: ${extra_cmake_args}") {
-        node("${label}") {
-            timeout(GLOBAL_TIMEOUT_MINUTES) {
-                cleanWs()
-                checkout scm
-                def task = """
-                           cmake ${WORKSPACE}                                           \
-                               -G Ninja                                                 \
-                               -DCMAKE_BUILD_TYPE=RelWithDebInfo                        \
-                               -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin    \
-                               ${extra_cmake_args.join(' ')}                            \
-                               -Wdev
-                           ninja -v
-                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS} > ctest.log
-                           """
-                oe.ContainerRun("oetools-full-${version}:${DOCKER_TAG}", "clang-7", task, "--cap-add=SYS_PTRACE --device /dev/sgx:/dev/sgx")
-                azureUpload(storageCredentialId: 'sophiestore', filesPath: '**/*.log', storageType: 'blobstorage', virtualPath: "SomethingReallyObvious/container", containerName: 'oejenkins')
-            }
-        }
-    }
-}
-
 
 try{
     oe.emailJobStatus('STARTED')
