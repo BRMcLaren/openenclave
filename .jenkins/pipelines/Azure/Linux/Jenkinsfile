@@ -101,7 +101,7 @@ def ACCGNUTest() {
                 def task = """
                            cmake ${WORKSPACE} -DHAS_QUOTE_PROVIDER=ON
                            make
-                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS}
+                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS} > ctest.log
                            """
                 oe.Run("gcc", task)
             }
@@ -232,7 +232,7 @@ def ACCHostVerificationTest(String version, String build_type) {
                 def task = """
                            cmake ${WORKSPACE} -G Ninja -DBUILD_ENCLAVES=OFF -DHAS_QUOTE_PROVIDER=OFF -DCMAKE_BUILD_TYPE=${build_type} -Wdev
                            ninja -v
-                           ctest -R host_verify --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS}
+                           ctest -R host_verify --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS} > ctest.log
                            """
                 // Note: Include the commands to build and run the quote verification test above
                 oe.ContainerRun("oetools-full-${version}:${DOCKER_TAG}", "clang-7", task, "--cap-add=SYS_PTRACE")
@@ -252,7 +252,7 @@ def ACCHostVerificationTest(String version, String build_type) {
                         vcvars64.bat x64 && \
                         cmake.exe ${WORKSPACE} -G Ninja -DBUILD_ENCLAVES=OFF -DHAS_QUOTE_PROVIDER=OFF -DCMAKE_BUILD_TYPE=${build_type} -DNUGET_PACKAGE_PATH=C:/oe_prereqs -Wdev && \
                         ninja -v && \
-                        ctest.exe -V -C ${build_type} -R host_verify --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS}
+                        ctest.exe -V -C ${build_type} -R host_verify --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS} > ctest.log
                         """
                 }
             }
