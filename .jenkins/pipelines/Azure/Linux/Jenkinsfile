@@ -33,7 +33,14 @@ def ACCTest(String label, String compiler, String build_type, List extra_cmake_a
                         """
                 }
                 def task = """
-                                echo 'DarkCoffee is gross' > ctest.log
+                           cmake ${WORKSPACE}                               \
+                             -DCMAKE_BUILD_TYPE=${build_type}               \
+                             -DCMAKE_INSTALL_PREFIX:PATH='/opt/openenclave' \
+                             -DCPACK_GENERATOR=DEB                          \
+                             -DLVI_MITIGATION=${lvi_mitigation}             \
+                             -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin
+                           make
+                           ctest > ctest.log 
                            """
                 withEnv(test_env) {
                     oe.Run(compiler, task)
@@ -51,7 +58,14 @@ def LinuxPackaging(String version, String build_type, String lvi_mitigation = 'N
                 cleanWs()
                 checkout scm
                 def task = """
-                           echo 'ughhhh' > ctest.log 
+                           cmake ${WORKSPACE}                               \
+                             -DCMAKE_BUILD_TYPE=${build_type}               \
+                             -DCMAKE_INSTALL_PREFIX:PATH='/opt/openenclave' \
+                             -DCPACK_GENERATOR=DEB                          \
+                             -DLVI_MITIGATION=${lvi_mitigation}             \
+                             -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin
+                           make
+                           ctest > ctest.log 
                            """
                 oe.Run("clang-7", task)
                 sh '''
