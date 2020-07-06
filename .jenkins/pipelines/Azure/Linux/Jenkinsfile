@@ -118,7 +118,9 @@ def ACCContainerTest(String label, String version, List extra_cmake_args = []) {
 
 try{
     oe.emailJobStatus('STARTED')
-    parallel "ACC1604 clang-7 Debug LVI":              { ACCTest(AGENTS_LABELS["acc-ubuntu-16.04"], 'clang-7', 'Debug',   ['-DLVI_MITIGATION=ControlFlow', '-DLVI_MITIGATION_SKIP_TESTS=ON']) },
+    parallel "ACC1604 Container RelWithDebInfo LVI":   { ACCContainerTest(AGENTS_LABELS["acc-ubuntu-16.04"], '16.04', ['-DLVI_MITIGATION=ControlFlow', '-DLVI_MITIGATION_SKIP_TESTS=ON']) },
+             "ACC1804 Container RelWithDebInfo LVI":   { ACCContainerTest(AGENTS_LABELS["acc-ubuntu-18.04"], '18.04', ['-DLVI_MITIGATION=ControlFlow', '-DLVI_MITIGATION_SKIP_TESTS=ON']) },
+             "ACC1604 clang-7 Debug LVI":              { ACCTest(AGENTS_LABELS["acc-ubuntu-16.04"], 'clang-7', 'Debug',   ['-DLVI_MITIGATION=ControlFlow', '-DLVI_MITIGATION_SKIP_TESTS=ON']) },
              "ACC1604 clang-7 Release LVI":            { ACCTest(AGENTS_LABELS["acc-ubuntu-16.04"], 'clang-7', 'Release', ['-DLVI_MITIGATION=ControlFlow', '-DLVI_MITIGATION_SKIP_TESTS=ON']) }
 } catch(Exception e) {
     println "Caught global pipeline exception :" + e
