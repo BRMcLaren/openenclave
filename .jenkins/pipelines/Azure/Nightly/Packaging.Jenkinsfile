@@ -17,7 +17,7 @@ def LinuxPackaging(String version, String build_type, String lvi_mitigation = 'N
                 checkout scm
                 def task = """
                            cmake ${WORKSPACE}                               \
-                             -DCMAKE_BUILD_TYPE=${build_type}               \
+                             -DCMAKE_BUILD_TYPE='Release'              \
                              -DCMAKE_INSTALL_PREFIX:PATH='/opt/openenclave' \
                              -DCPACK_GENERATOR=DEB                          \
                              -DLVI_MITIGATION=${lvi_mitigation}             \
