@@ -17,15 +17,15 @@ def LinuxPackaging(String version, String build_type, String lvi_mitigation = 'N
                 checkout scm
                 def task = """
                            cmake ${WORKSPACE}                               \
-                             -DCMAKE_BUILD_TYPE='Release'              \
+                             -DCMAKE_BUILD_TYPE=${build_type}               \
                              -DCMAKE_INSTALL_PREFIX:PATH='/opt/openenclave' \
                              -DCPACK_GENERATOR=DEB                          \
                              -DLVI_MITIGATION=${lvi_mitigation}             \
                              -DLVI_MITIGATION_BINDIR=/usr/local/lvi-mitigation/bin
                            make
                            ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS}
-                           cpack -D CPACK_DEB_COMPONENT_INSTALL=ON -DCPACK_COMPONENTS_ALL=OEHOSTVERIFY
                            cpack
+                           cpack -D CPACK_DEB_COMPONENT_INSTALL=ON -DCPACK_COMPONENTS_ALL=OEHOSTVERIFY
                            """
                 oe.Run("clang-7", task)
                 azureUpload(storageCredentialId: 'oe_jenkins_storage_account', filesPath: 'build/*.deb', storageType: 'blobstorage', virtualPath: "${BRANCH_NAME}/${BUILD_NUMBER}/ubuntu/${version}/${build_type}/lvi-mitigation-${lvi_mitigation}/SGX1FLC/", containerName: 'oejenkins')
