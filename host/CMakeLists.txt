@@ -1,11 +1,8 @@
 # Copyright (c) Open Enclave SDK contributors.
 # Licensed under the MIT License.
 
-set(OE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
-set(EDL_DIR ${CMAKE_SOURCE_DIR}/include/openenclave/edl)
-if (OE_SGX)
-  set(SGX_EDL_DIR ${EDL_DIR}/sgx)
-endif ()
+set(OE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+set(EDL_DIR ${PROJECT_SOURCE_DIR}/include/openenclave/edl)
 
 ##==============================================================================
 ##
@@ -97,12 +94,12 @@ install(DIRECTORY ${OE_EDL_INCLUDE_DIR}
 ##
 ##==============================================================================
 
-set(SGX_EDL_FILE ${SGX_EDL_DIR}/platform.edl)
+set(SGX_EDL_FILE ${EDL_DIR}/sgx/platform.edl)
 if (OE_SGX AND COMPILE_SYSTEM_EDL)
   add_custom_command(
     OUTPUT platform_u.h platform_u.c platform_args.h
     DEPENDS ${SGX_EDL_FILE} edger8r
-    COMMAND edger8r --search-path ${SGX_EDL_DIR} --untrusted ${SGX_EDL_FILE})
+    COMMAND edger8r --search-path ${OE_INCLUDE_DIR} --untrusted ${SGX_EDL_FILE})
 
   add_custom_target(platform_untrusted_edl DEPENDS platform_u.h platform_u.c
                                                    platform_args.h)
@@ -112,7 +109,7 @@ elseif (OE_SGX)
   add_custom_command(
     OUTPUT platform_u.h platform_args.h
     DEPENDS ${SGX_EDL_FILE} edger8r
-    COMMAND edger8r --header-only --search-path ${SGX_EDL_DIR} --untrusted
+    COMMAND edger8r --header-only --search-path ${OE_INCLUDE_DIR} --untrusted
             ${SGX_EDL_FILE})
 
   add_custom_target(platform_untrusted_edl DEPENDS platform_u.h platform_args.h)
@@ -269,6 +266,7 @@ if (OE_SGX)
     sgx/quote.c
     sgx/registers.c
     sgx/report.c
+    sgx/sgx_enclave_common_wrapper.c
     sgx/sgxload.c
     sgx/sgxquote.c
     sgx/sgxsign.c
@@ -434,12 +432,12 @@ if (UNIX)
   endif ()
 elseif (WIN32)
   target_include_directories(
-    oehost PRIVATE ${CMAKE_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
+    oehost PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
   # Synchronization library is needed for WaitOnAddress/WakeByAddress functions
   # used by switchless ocalls worker threads.
   target_link_libraries(oehost PRIVATE bcrypt Crypt32 Synchronization)
   target_include_directories(
-    oehostverify PRIVATE ${CMAKE_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
+    oehostverify PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
   target_link_libraries(oehostverify PRIVATE bcrypt Crypt32)
 
   # TODO: Handle TrustZone on Windows.
@@ -449,34 +447,9 @@ endif ()
 target_include_directories(oehost PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if (OE_SGX)
-  # Always link with the EnclaveCommonAPI
-  if (WIN32)
-    set(LIBPATHS ${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/lib/native/x64-Release)
-    set(INCPATHS "${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/Header Files")
-  endif ()
   if (NOT LIBPATHS)
     set(LIBPATHS "/usr")
   endif ()
-  find_library(
-    LIBSGX_COMMON
-    NAMES sgx_enclave_common
-    HINTS ${LIBPATHS})
-  if (NOT LIBSGX_COMMON)
-    message(
-      FATAL_ERROR "Intel SGX EnclaveCommonAPI library not found, aborting!")
-  endif ()
-  add_library(sgx_enclave_common SHARED IMPORTED)
-  if (WIN32)
-    set_target_properties(
-      sgx_enclave_common
-      PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
-                 IMPORTED_LOCATION $ENV{WINDIR}/System32 IMPORTED_IMPLIB
-                                                         ${LIBSGX_COMMON})
-  elseif (UNIX)
-    set_target_properties(sgx_enclave_common PROPERTIES IMPORTED_LOCATION
-                                                        ${LIBSGX_COMMON})
-  endif ()
-  target_link_libraries(oehost PUBLIC $<BUILD_INTERFACE:sgx_enclave_common>)
 
   # Optionally link in DCAP library
   if (HAS_QUOTE_PROVIDER)
@@ -507,7 +480,11 @@ if (OE_SGX)
       set_target_properties(sgx_dcap_ql PROPERTIES IMPORTED_LOCATION
                                                    ${LIBSGX_QE})
     endif ()
-    target_link_libraries(oehost PUBLIC $<BUILD_INTERFACE:sgx_dcap_ql>)
+    # In Windows, add sgx_dcap_ql headers to the include path.
+    # In Linux, they are already available in /usr/include.
+    if (WIN32)
+      target_include_directories(oehost PRIVATE ${INCPATHS})
+    endif ()
     # turn on 'OE_LINK_SGX_DCAP_QL' for the preprocessor
     target_compile_definitions(oehost PUBLIC OE_LINK_SGX_DCAP_QL)
   endif ()
@@ -574,7 +551,8 @@ endif ()
 install(
   TARGETS oehost
   EXPORT openenclave-targets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/host)
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/host
+          COMPONENT OEHOSTVERIFY)
 
 install(
   TARGETS oehostverify

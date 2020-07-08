@@ -1008,7 +1008,13 @@ oe_result_t oe_create_enclave(
     OE_CHECK(_initialize_enclave(enclave));
 
     /* Setup logging configuration */
-    oe_log_enclave_init(enclave);
+    if (oe_log_enclave_init(enclave) == OE_UNSUPPORTED)
+    {
+        OE_TRACE_WARNING(
+            "In-enclave logging is not supported. To enable, please add \n\n"
+            "from \"openenclave/edl/logging.edl\" import *;\n\n"
+            "in the edl file.\n");
+    }
 
     /* Apply the list of settings to the enclave.
      * This may initialize switchless manager too.

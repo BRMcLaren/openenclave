@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 #include "debugmalloc.h"
+#include <openenclave/advanced/allocator.h>
 #include <openenclave/corelibc/errno.h>
 #include <openenclave/enclave.h>
-#include <openenclave/internal/allocator.h>
 #include <openenclave/internal/backtrace.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/malloc.h>
@@ -351,7 +351,7 @@ void* oe_debug_calloc(size_t nmemb, size_t size)
 
     const size_t total_size = nmemb * size;
 
-    if (!(ptr = oe_allocator_malloc(total_size)))
+    if (!(ptr = oe_debug_malloc(total_size)))
         return NULL;
 
     oe_memset_s(ptr, total_size, 0, total_size);
