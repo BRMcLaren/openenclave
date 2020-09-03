@@ -15,6 +15,7 @@ intel_dcap_packages:
   - "libsgx-dcap-ql"
   - "libsgx-dcap-ql-dev"
   - "libsgx-urts"
+  - "libsgx-dcap-quote-verify-dev"
 
 packages_validation_distribution_files:
   - "/usr/lib/x86_64-linux-gnu/libsgx_enclave_common.so"
