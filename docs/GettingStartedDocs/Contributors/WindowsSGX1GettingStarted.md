@@ -57,12 +57,11 @@ would like to install the packages to `C:/oe_prereqs`.
 ./scripts/install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs -LaunchConfiguration SGX1 -DCAPClientType None
 ```
 
-On Windows Server 2019 and versions of Windows 10 newer than 1709, the Intel PSW
-should already be automatically installed. Attempting to run the PSW installer will fail if
-that is the case. To skip the PSW installer:
+On Windows Server 2019 and versions of Windows 10 newer than 1709, the Intel PSW and Dcap libraries
+should already be automatically installed. If you want to skip installation of these components pass in the `SGX1FLC-NoSGXPackages` flag
 
 ```powershell
-./scripts/install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs -LaunchConfiguration SGX1-NoDriver -DCAPClientType None
+./scripts/install-windows-prereqs.ps1 -InstallPath C:/oe_prereqs -LaunchConfiguration SGX1-NoSGXPackages -DCAPClientType None
 ```
 
 Once the installation is done, please ignore the following message(s) and continue on to the next step.
