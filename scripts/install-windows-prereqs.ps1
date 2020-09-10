@@ -688,6 +688,8 @@ try {
     {
         Install-PSW
         Install-DCAP-Dependencies
+    } elseif($DCAPClientType -eq "Azure") {
+        Install-DCAP-Dependencies
     }
 
     Install-VCRuntime
