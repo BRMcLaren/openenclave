@@ -593,7 +593,15 @@ function Install-DCAP-Dependencies {
                     }
                 }
                 Write-Output "Installing driver $($drivers[${OS_VERSION}][$driver]['location'])"
-                $install = & pnputil /add-driver "$($inf.FullName)" /install
+                if($OS_VERSION -eq "WinServer2016")
+                {
+                    $install = & $devConBinaryPath install "$($inf.FullName)" $drivers[${OS_VERSION}][$driver]['location']
+                    if($LASTEXITCODE) {
+                        Throw "Failed to install $driver driver"
+                    }
+                } else{
+                    $install = & pnputil /add-driver "$($inf.FullName)" /install
+                }
                 Write-Output $install
             }
         }
@@ -639,7 +647,7 @@ function Install-DCAP-Dependencies {
         Throw "Failed to install nuget EnclaveCommonAPI"
     }
 
-    if (${OS_VERSION} -eq "WinServer2019")
+    if (($LaunchConfiguration -eq "SGX1FLC") -or (${OS_VERSION} -eq "WinServer2019"))
     {
         # Please refer to Intel's Windows DCAP documentation for this registry setting: https://download.01.org/intel-sgx/dcap-1.2/windows/docs/Intel_SGX_DCAP_Windows_SW_Installation_Guide.pdf
         New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\sgx_lc_msr\Parameters" -Name "SGX_Launch_Config_Optin" -Value 1 -PropertyType DWORD -Force
