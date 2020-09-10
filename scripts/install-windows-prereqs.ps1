@@ -35,7 +35,7 @@ Param(
     [string]$GetPipURL = 'https://bootstrap.pypa.io/3.4/get-pip.py',
     [string]$GetPipHash = '564FABC2FBABD9085A71F4A5E43DBF06D5CCEA9AB833E260F30EE38E8CE63A69',
     [Parameter(mandatory=$true)][string]$InstallPath,
-    [Parameter(mandatory=$true)][ValidateSet("SGX1FLC", "SGX1", "SGX1FLC-NoSGX", "SGX1-NoSGX")][string]$LaunchConfiguration,
+    [Parameter(mandatory=$true)][ValidateSet("SGX1FLC", "SGX1", "SGX1FLC-NoSGXPackages", "SGX1-NoSGXPackages")][string]$LaunchConfiguration,
     [Parameter(mandatory=$true)][ValidateSet("None", "Azure")][string]$DCAPClientType
 )
 
@@ -639,7 +639,7 @@ function Install-DCAP-Dependencies {
         Throw "Failed to install nuget EnclaveCommonAPI"
     }
 
-    if (($LaunchConfiguration -eq "SGX1FLC") -or (${OS_VERSION} -eq "WinServer2019"))
+    if (${OS_VERSION} -eq "WinServer2019")
     {
         # Please refer to Intel's Windows DCAP documentation for this registry setting: https://download.01.org/intel-sgx/dcap-1.2/windows/docs/Intel_SGX_DCAP_Windows_SW_Installation_Guide.pdf
         New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\sgx_lc_msr\Parameters" -Name "SGX_Launch_Config_Optin" -Value 1 -PropertyType DWORD -Force
@@ -676,7 +676,7 @@ try {
     Install-Shellcheck
     Install-NSIS
 
-    if (($LaunchConfiguration -ne "SGX1FLC-NoSGX") -and ($LaunchConfiguration -ne "SGX1-NoSGX"))
+    if (($LaunchConfiguration -ne "SGX1FLC-NoSGXPackages") -and ($LaunchConfiguration -ne "SGX1-NoSGXPackages"))
     {
         Install-PSW
         Install-DCAP-Dependencies
