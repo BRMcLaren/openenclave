@@ -7,12 +7,10 @@ clang_target_version: "7.1.0"
 shellcheck_target_version: "0.4.6"
 cmake_prefix: "/usr/local"
 
-clang_binary_name: "clang-7"
+clang_binary_name: "clang-8"
 
 apt_packages:
   - "curl"
-  - "clang-7"
-  - "clang-format-7"
   - "make"
   - "ninja-build"
   - "shellcheck"
@@ -47,7 +45,7 @@ apt_arm_packages:
 
 validation_distribution_binaries:
   - "/usr/bin/shellcheck"
-  - "/usr/bin/clang-7"
+  - "/usr/bin/clang-8"
 
 validation_distribution_files:
   - "/usr/lib/x86_64-linux-gnu/libssl.so"
