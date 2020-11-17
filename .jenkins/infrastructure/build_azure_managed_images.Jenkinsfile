@@ -48,6 +48,7 @@ def buildLinuxManagedImage(String os_type, String version) {
                 def managed_image_name_id = get_image_id()
                 def gallery_image_version = get_image_version()
                 def az_cleanup_existing_image_version_script = """
+                    echo "Brett \$SERVICE_PRINCIPAL_ID"
                     az login --service-principal -u \$SERVICE_PRINCIPAL_ID -p \$SERVICE_PRINCIPAL_PASSWORD --tenant \$TENANT_ID
                     az account set -s \$SUBSCRIPTION_ID
 
