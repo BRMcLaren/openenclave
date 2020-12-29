@@ -429,6 +429,14 @@ function Install-PSW {
             pnputil /add-driver $psw_dir\sgx_psw.inf /install
             Get-Service "AESMService"
         }
+        Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
+            pnputil /add-driver $psw_dir\sgx_psw.inf /install
+            Get-Service "AESMService"
+        }
+        Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
+            pnputil /add-driver $psw_dir\sgx_psw.inf /install
+            Get-Service "AESMService"
+        }
     }
     Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
         Start-Service "AESMService" -ErrorAction Stop
