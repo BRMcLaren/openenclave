@@ -430,7 +430,7 @@ function Install-PSW {
             Get-Service "AESMService"
         }
     }
-    Start-ExecuteWithRetry -ScriptBlock {
+    Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
         Start-Service "AESMService" -ErrorAction Stop
     } -RetryMessage "Failed to start AESMService. Retrying"
 }
