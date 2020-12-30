@@ -445,13 +445,20 @@ function Install-PSW {
         } -RetryMessage "Failed to stop AESMService. Retrying"
 
         Write-Host ".. Sleep for 120 seconds..."
+
+        Write-Host "Attempting to remove AESM service..."
+        Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
+            Remove-Service "AESMService" -ErrorAction Stop
+        } -RetryMessage "Failed to stop AESMService. Retrying"
+
+        Write-Host ".. Sleep for 120 seconds..."
         # Add sleep timer to ensure proper shutdown of AESM service
         Start-Sleep -s 120
 
         Write-Host "...Attempting to install AESM service..."
         Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
             pnputil /add-driver $psw_dir\sgx_psw.inf /install
-            Get-Service "AESMService"
+            Get-Service "AESMService" -ErrorAction Stop
         }
 
         Write-Host ".. Sleep for 120 seconds..."
