@@ -717,6 +717,9 @@ try {
     Install-Shellcheck
     Install-NSIS
 
+    # Just a guess
+    Set-ExecutionPolicy RemoteSigned -Force
+
     if (($LaunchConfiguration -ne "SGX1FLC-NoIntelDrivers") -and ($LaunchConfiguration -ne "SGX1-NoIntelDrivers"))
     {
         Install-PSW
