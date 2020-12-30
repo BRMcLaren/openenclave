@@ -445,13 +445,6 @@ function Install-PSW {
         } -RetryMessage "Failed to stop AESMService. Could be that it does not exist, in which case ignore this message. Retrying just in case"
 
         Write-Host ".. Sleep for 120 seconds..."
-
-        Write-Host "Attempting to remove AESM service..."
-        Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
-            Remove-Service "AESMService" -ErrorAction Continue
-        } -RetryMessage "Failed to stop AESMService. Could be that it does not exist, in which case ignore this message. Retrying just in case"
-
-        Write-Host ".. Sleep for 120 seconds..."
         # Add sleep timer to ensure proper shutdown of AESM service
         Start-Sleep -s 120
 
