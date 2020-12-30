@@ -425,19 +425,41 @@ function Install-PSW {
         }
     } else {
         $psw_dir = Get-Item "$tempInstallDir\Intel*SGX*\PSW_INF*\"
+
+        ### This is added because we saw 2016 failures when only 2019 should have been impacted
+        Write-Host "OS Version is $OS_VERSION"
+        Write-Host "Windows version"
+        (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ReleaseId
+        Write-Host "psw dir is $psw_dir"
+
+        ### Current hyptothesises
+        # 1 Hardware issue    ( Unlikely)
+        # 2 Windows bug in itself (validate by printing OS version)
+        # 3 incorrect aesm shutdown and restart (Validating)
+        # 4 delayed aesm shutdown and restart(Validating)
+        # 5 PSW issues that needs to be triaged by Intel
+
+        Write-Host "Attempting to stop AESM service..."
+        Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
+            Stop-Service "AESMService" -ErrorAction Stop
+        } -RetryMessage "Failed to stop AESMService. Retrying"
+
+        Write-Host ".. Sleep for 120 seconds..."
+        # Add sleep timer to ensure proper shutdown of AESM service
+        Start-Sleep -s 120
+
+        Write-Host "...Attempting to install AESM service..."
         Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
             pnputil /add-driver $psw_dir\sgx_psw.inf /install
             Get-Service "AESMService"
         }
-        Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
-            pnputil /add-driver $psw_dir\sgx_psw.inf /install
-            Get-Service "AESMService"
-        }
-        Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
-            pnputil /add-driver $psw_dir\sgx_psw.inf /install
-            Get-Service "AESMService"
-        }
+
+        Write-Host ".. Sleep for 120 seconds..."
+        # Add sleep timer to ensure proper shutdown of AESM service
+        Start-Sleep -s 120
     }
+
+    Write-Host ".. Attempt to start AESM Service"
     Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
         Start-Service "AESMService" -ErrorAction Stop
     } -RetryMessage "Failed to start AESMService. Retrying"
