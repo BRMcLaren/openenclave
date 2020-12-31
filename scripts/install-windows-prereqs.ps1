@@ -706,6 +706,7 @@ function Install-NSIS {
 }
 
 try {
+    Write-Host "This is Brett's code"
     Start-LocalPackagesDownload
 
     Install-7Zip
