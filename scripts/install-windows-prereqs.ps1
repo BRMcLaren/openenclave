@@ -427,10 +427,10 @@ function Install-PSW {
         $psw_dir = Get-Item "$tempInstallDir\Intel*SGX*\PSW_INF*\"
 
         ### This is added because we saw 2016 failures when only 2019 should have been impacted
-        Write-Host "OS Version is $OS_VERSION"
-        Write-Host "Windows version"
+        Write-Output "OS Version is $OS_VERSION"
+        Write-Output "Windows version"
         (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ReleaseId
-        Write-Host "psw dir is $psw_dir"
+        Write-Output "psw dir is $psw_dir"
 
         ### Current hyptothesises
         # 1 Hardware issue    ( Unlikely)
@@ -439,28 +439,28 @@ function Install-PSW {
         # 4 delayed aesm shutdown and restart(Validating)
         # 5 PSW issues that needs to be triaged by Intel
 
-        Write-Host "Attempting to stop AESM service..."
+        Write-Output "Attempting to stop AESM service..."
         Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
             Stop-Service "AESMService" -ErrorAction Continue
         } -RetryMessage "Failed to stop AESMService. Could be that it does not exist, in which case ignore this message. Retrying just in case"
 
-        Write-Host ".. Sleep for 120 seconds..."
+        Write-Output ".. Sleep for 120 seconds..."
         # Add sleep timer to ensure proper shutdown of AESM service
         Start-Sleep -s 120
 
-        Write-Host "...Attempting to install AESM service..."
+        Write-Output "...Attempting to install AESM service..."
         Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
             pnputil /add-driver $psw_dir\sgx_psw.inf /install
             Start-Sleep -s 15
             Get-Service "AESMService" -ErrorAction Stop
         }
 
-        Write-Host ".. Sleep for 120 seconds..."
+        Write-Output ".. Sleep for 120 seconds..."
         # Add sleep timer to ensure proper shutdown of AESM service
         Start-Sleep -s 120
     }
 
-    Write-Host ".. Attempt to start AESM Service"
+    Write-Output ".. Attempt to start AESM Service"
     Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
         Start-Service "AESMService" -ErrorAction Stop
     } -RetryMessage "Failed to start AESMService. Retrying"
@@ -661,7 +661,7 @@ function Install-DCAP-Dependencies {
             Throw "Failed to install nuget Microsoft.Azure.DCAP"
         }
         $targetPath = [System.Environment]::SystemDirectory
-        Write-Host "Installing Microsoft.Azure.DCAP library to $targetPath"
+        Write-Output "Installing Microsoft.Azure.DCAP library to $targetPath"
         pushd "$OE_NUGET_DIR\Microsoft.Azure.DCAP\tools"
         & ".\InstallAzureDCAP.ps1" $targetPath
         if($LASTEXITCODE) {
@@ -707,8 +707,11 @@ function Install-NSIS {
 
 try {
     Write-Output "This is Brett's code"
-    Write-Host "This is Brett's code"
+    Write-Output "This is Brett's code"
     Start-LocalPackagesDownload
+
+    Write-Output "Currently trying a double install"
+    Write-Output "Currently trying a double install"
 
     Install-7Zip
     Install-Nuget
