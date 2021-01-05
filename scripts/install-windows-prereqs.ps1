@@ -448,14 +448,14 @@ function Install-PSW {
         # Add sleep timer to ensure proper shutdown of AESM service
         Start-Sleep -s 120
 
-        Write-Output "...Attempting to install AESM service..."
+        Write-Output "...Attempting to install AESM service... before stopping AESM service "
         Start-ExecuteWithRetry -RetryInterval 5 -ScriptBlock {
             pnputil /add-driver $psw_dir\sgx_psw.inf /install
             Start-Sleep -s 15
             Get-Service "AESMService" -ErrorAction Stop
         }
 
-        Write-Output ".. Sleep for 120 seconds..."
+        Write-Output ".. Sleep for 120 seconds... before starting AESM service "
         # Add sleep timer to ensure proper shutdown of AESM service
         Start-Sleep -s 120
     }
