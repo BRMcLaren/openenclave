@@ -439,6 +439,14 @@ function Install-PSW {
         # 4 delayed aesm shutdown and restart(Validating)
         # 5 PSW issues that needs to be triaged by Intel
 
+        Write-Output ".. try get AESM service before interacting with it.."
+        Start-ExecuteWithRetry -RetryInterval 30 -ScriptBlock {
+            Get-Service "AESMService" -ErrorAction Continue
+        }
+        Write-Output ".. Sleep for 120 seconds..."
+        # Add sleep timer to ensure proper shutdown of AESM service
+        Start-Sleep -s 120
+
         Write-Output "Attempting to stop AESM service..."
         Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
             Stop-Service "AESMService" -ErrorAction Stop
