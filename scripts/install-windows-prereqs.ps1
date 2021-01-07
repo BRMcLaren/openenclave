@@ -449,7 +449,7 @@ function Install-PSW {
 
         Write-Output "Attempting to stop AESM service..."
         Start-ExecuteWithRetry -RetryInterval 15 -ScriptBlock {
-            Stop-Service "AESMService" -ErrorAction Stop
+            Stop-Service "AESMService" -ErrorAction Continue
         } -RetryMessage "Failed to stop AESMService. If you are reading this message, there is either something wrong with the underlying hardware or the base image being deployed"
 
         Write-Output ".. Sleep for 120 seconds..."
