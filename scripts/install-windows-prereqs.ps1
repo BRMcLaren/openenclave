@@ -716,6 +716,8 @@ function Install-NSIS {
 try {
     Write-Output "This is Brett's code..sleeping 10 mins"
     Start-Sleep -s 600
+    Write-Output "This is Brett's code..sleeping 10 mins.. again"
+    Start-Sleep -s 600
     Write-Output "This is Brett's code"
     Start-LocalPackagesDownload
 
