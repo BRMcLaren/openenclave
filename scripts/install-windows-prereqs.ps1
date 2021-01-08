@@ -439,6 +439,8 @@ function Install-PSW {
         # 4 delayed aesm shutdown and restart(Validating)
         # 5 PSW issues that needs to be triaged by Intel
 
+        Write-Output ".. Print all installed drivers .."
+        driverquery
         Write-Output ".. try get AESM service before interacting with it.."
         Start-ExecuteWithRetry -RetryInterval 30 -ScriptBlock {
             Get-Service "AESMService" -ErrorAction Continue
