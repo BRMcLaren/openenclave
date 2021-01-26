@@ -6,8 +6,7 @@
 trigger:
 - main
 
-pool:
-  vmImage: 'icx-priv'
+pool: 'icx-priv'
 
 steps:
 - script: echo Hello, world!
